@@ -61,6 +61,12 @@ class IRCChannel:
             message_text=f"Welcome to channel {self.name}",
         )
         tx.send(pkt)
+        time.sleep(1)
+        tx.send(packets.MessagePacket(
+            from_call=CONF.callsign,
+            to_call=user,
+            message_text=f"Use /leave {self.name} to leave",
+        ))
 
     def leave(self, user):
         if user in self.users:
@@ -308,6 +314,21 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                 ))
                 return
             if ch:
+                if fromcall not in ch.users:
+                    LOG.error(f"{fromcall} not in channel {channel_name}")
+                    tx.send(packets.MessagePacket(
+                        from_call=CONF.callsign,
+                        to_call=fromcall,
+                        message_text=f"{fromcall} not in channel {channel_name}",
+                    ))
+                    tx.send(packets.MessagePacket(
+                        from_call=CONF.callsign,
+                        to_call=fromcall,
+                        message_text=f"Send /join {channel_name} to join channel",
+                    ))
+
+                    return
+
                 for user in ch.users:
                     if user != fromcall:
                         tx.send(packets.MessagePacket(
@@ -419,6 +440,11 @@ def server(ctx, flush):
         packet_queue=aprsd_threads.packet_queue,
     )
     channel_info_thread = ChannelInfoThread()
+
+    if CONF.enable_beacon:
+        LOG.info("Beacon Enabled.  Starting Beacon thread.")
+        bcn_thread = tx.BeaconSendThread()
+        bcn_thread.start()
 
     rx_thread.start()
     process_thread.start()
