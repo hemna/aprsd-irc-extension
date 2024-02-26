@@ -329,12 +329,13 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
 
                     return
 
+                msg = message.replace(ch.name, f"{ch.name} {fromcall}")
                 for user in ch.users:
                     if user != fromcall:
                         tx.send(packets.MessagePacket(
                             from_call=CONF.callsign,
                             to_call=user,
-                            message_text=f"{fromcall} {message}",
+                            message_text=msg,
                         ))
             else:
                 LOG.error(f"Channel {channel_name} not found")
