@@ -334,7 +334,7 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                         tx.send(packets.MessagePacket(
                             from_call=CONF.callsign,
                             to_call=user,
-                            message_text=message,
+                            message_text=f"{fromcall} {message}",
                         ))
             else:
                 LOG.error(f"Channel {channel_name} not found")
