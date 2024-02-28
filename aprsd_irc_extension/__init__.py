@@ -13,4 +13,4 @@
 import pbr.version
 
 
-__version__ = pbr.version.VersionInfo("aprsd_irc").version_string()
+__version__ = pbr.version.VersionInfo("aprsd_irc_extension").version_string()

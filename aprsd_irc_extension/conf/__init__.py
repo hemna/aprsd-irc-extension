@@ -1,6 +1,6 @@
 from oslo_config import cfg
 
-from aprsd_irc.conf import main
+from aprsd_irc_extension.conf import main
 
 
 CONF = cfg.CONF

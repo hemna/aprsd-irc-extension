@@ -9,8 +9,8 @@ import click
 from oslo_config import cfg
 
 import aprsd
-import aprsd_irc
-from aprsd_irc import cmds, utils
+import aprsd_irc_extension
+from aprsd_irc_extension import cmds, utils
 from aprsd import cli_helper, client, packets, stats
 from aprsd import threads as aprsd_threads
 from aprsd.threads import tx
@@ -389,7 +389,7 @@ def server(ctx, flush):
         LOG.warning(msg)
     else:
         LOG.info(msg)
-    LOG.info(f"APRSD IRC Started version: {aprsd_irc.__version__}")
+    LOG.info(f"APRSD IRC Started version: {aprsd_irc_extension.__version__}")
     LOG.info(f"APRSD version: {aprsd.__version__}")
 
     # Initialize the client factory and create

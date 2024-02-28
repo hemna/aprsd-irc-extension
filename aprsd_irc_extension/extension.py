@@ -1,1 +1,1 @@
-from aprsd_irc.cmds import server  # noqa: F401
+from aprsd_irc_extension.cmds import server  # noqa: F401

@@ -2,7 +2,7 @@ from oslo_config import cfg
 
 
 plugin_group = cfg.OptGroup(
-    name="aprsd_irc",
+    name="aprsd_irc_extension",
     title="APRSD IRC Extension settings",
 )
 

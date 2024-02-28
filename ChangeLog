@@ -1,6 +1,10 @@
 CHANGES
 =======
 
+v0.0.1
+------
+
+* Added Changelog
 * Fixed pep8
 * rename to aprsd-irc-extension
 * change re-tx'd messge
