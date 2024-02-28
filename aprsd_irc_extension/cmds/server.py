@@ -11,7 +11,6 @@ from oslo_config import cfg
 import aprsd
 import aprsd_irc
 from aprsd_irc import cmds, utils
-from aprsd import main as aprsd_main
 from aprsd import cli_helper, client, packets, stats
 from aprsd import threads as aprsd_threads
 from aprsd.threads import tx
@@ -39,6 +38,7 @@ def signal_handler(sig, frame):
         LOG.info(stats.APRSDStats())
         # signal.signal(signal.SIGTERM, sys.exit(0))
         # sys.exit(0)
+
 
 class InvalidChannelName(Exception):
     pass
@@ -91,7 +91,6 @@ class IRCChannel:
         IRChannels().list(user)
 
 
-
 class IRChannels(objectstore.ObjectStoreMixin):
     """List of IRC Channels."""
     _instance = None
@@ -136,7 +135,6 @@ class IRChannels(objectstore.ObjectStoreMixin):
             raise InvalidChannelName(
                 "Channel name must start with #")
         return self.data.get(name)
-
 
 
 class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
@@ -201,7 +199,6 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                 return self.short_server_commands[command]
         return None
 
-
     def process_channel_command(self, packet, command_name, channel_name):
         fromcall = packet.from_call
         message = packet.get("message_text")
@@ -213,7 +210,7 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
             tx.send(packets.MessagePacket(
                 from_call=CONF.callsign,
                 to_call=fromcall,
-                message_text=f"Channel name must start with #",
+                message_text="Channel name must start with #",
             ))
             return
 
@@ -264,7 +261,6 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
         cmd(packet)
         return
 
-
     def process_our_message_packet(self, packet):
         irc_channels = IRChannels()
         fromcall = packet.from_call
@@ -310,7 +306,7 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                 tx.send(packets.MessagePacket(
                     from_call=CONF.callsign,
                     to_call=fromcall,
-                    message_text=f"Channel name must start with #",
+                    message_text="Channel name must start with #",
                 ))
                 return
             if ch:
@@ -429,7 +425,7 @@ def server(ctx, flush):
         IRChannels().load()
 
     # Make sure the #lounge channel exists
-    ch = IRChannels().add_channel("#lounge")
+    IRChannels().add_channel("#lounge")
 
     keepalive = aprsd_threads.KeepAliveThread()
     keepalive.start()
