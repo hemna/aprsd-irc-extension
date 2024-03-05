@@ -203,6 +203,19 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                 return self.short_server_commands[command]
         return None
 
+    def _user_channel_count(self, user):
+        """How many channels is a user in?"""
+        count = 0
+        found = {}
+        for ch in IRChannels().data:
+            ch = IRChannels().get(ch)
+            if user in ch.users:
+                count += 1
+                found[ch.name] = ch
+                continue
+
+        return count, found
+
     def process_channel_command(self, packet, command_name, channel_name):
         fromcall = packet.from_call
         message = packet.get("message_text")
@@ -212,15 +225,7 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
             # If this is leave
             # find how many channels the user is in
             if command_name == "/leave" or command_name == "/l":
-                count = 0
-                found = {}
-                for ch in IRChannels().data:
-                    ch = IRChannels().get(ch)
-                    if fromcall in ch.users:
-                        count += 1
-                        found[ch.name] = ch
-                        continue
-
+                count, found = self._user_channel_count(fromcall)
                 if count == 1:
                     ch = found.popitem()[1]
                     channel_name = ch.name
@@ -342,13 +347,28 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
             try:
                 ch = irc_channels.get_channel(channel_name)
             except InvalidChannelName as e:
-                LOG.error(f"Failed to get channel: {e}")
-                tx.send(packets.MessagePacket(
-                    from_call=CONF.callsign,
-                    to_call=fromcall,
-                    message_text="Channel name must start with #",
-                ))
-                return
+                count, found = self._user_channel_count(fromcall)
+                if count == 1:
+                    ch = found.popitem()[1]
+                    channel_name = ch.name
+                    message = f"{ch.name} {message}"
+                elif count > 1:
+                    LOG.info(f"Failed to get channel from a user message. User in more than 1 channel")
+                    tx.send(packets.MessagePacket(
+                        from_call=CONF.callsign,
+                        to_call=fromcall,
+                        message_text="Need to specify channel when sending a message. /msg #channel message",
+                    ))
+                    return
+                else:
+                    LOG.error(f"Failed to get channel: {e}")
+                    tx.send(packets.MessagePacket(
+                        from_call=CONF.callsign,
+                        to_call=fromcall,
+                        message_text="Channel name must start with #",
+                    ))
+                    return
+
             if ch:
                 if fromcall not in ch.users:
                     LOG.error(f"{fromcall} not in channel {channel_name}")
