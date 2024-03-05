@@ -11,6 +11,7 @@ from oslo_config import cfg
 import aprsd
 import aprsd_irc_extension
 from aprsd_irc_extension import cmds, utils
+from aprsd_irc_extension import conf  # noqa
 from aprsd import cli_helper, client, packets, stats
 from aprsd import threads as aprsd_threads
 from aprsd.threads import tx
@@ -86,6 +87,9 @@ class IRCChannel:
                 message_text=f"not in channel {self.name}",
             )
             tx.send(pkt)
+
+    def add_message(self, pkt):
+        self.messages.append(pkt)
 
     def list(self, user):
         IRChannels().list(user)
@@ -203,6 +207,34 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
         fromcall = packet.from_call
         message = packet.get("message_text")
         ch = None
+        if not channel_name:
+            # They didn't specify a channel name
+            # If this is leave
+            # find how many channels the user is in
+            if command_name == "/leave" or command_name == "/l":
+                count = 0
+                found = {}
+                for ch in IRChannels().data:
+                    ch = IRChannels().get(ch)
+                    if fromcall in ch.users:
+                        count += 1
+                        found[ch.name] = ch
+                        continue
+
+                if count == 1:
+                    ch = found.popitem()[1]
+                    channel_name = ch.name
+                else:
+                    channel_names = ", ".join(found.keys())
+                    LOG.info(f"User {fromcall} is in {count} channels ({channel_names}). "
+                             "Need to specify channel when leaving.")
+                    tx.send(packets.MessagePacket(
+                        from_call=CONF.callsign,
+                        to_call=fromcall,
+                        message_text="Need to specify channel when leaving. /leave #channel",
+                    ))
+                    return
+
         try:
             ch = IRChannels().get_channel(channel_name)
         except InvalidChannelName as e:
@@ -231,13 +263,21 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
             return
         cmd = getattr(ch, cmd_dict["cmd"])
         cmd(fromcall)
+
+        # if they are the last user to leave the channel, delete the channel
+        if command_name == "/leave" or command_name == "/l":
+            if not ch.users and not CONF.aprsd_irc_extension.default_channel:
+                IRChannels().remove_channel(ch.name)
         return
 
     def process_irc_command(self, packet):
         message = packet.get("message_text")
         msg_parts = message.split()
         command_name = msg_parts[0]
-        channel_name = msg_parts[1]
+        try:
+            channel_name = msg_parts[1]
+        except IndexError:
+            channel_name = None
         self.process_channel_command(packet, command_name, channel_name)
 
     def process_server_command(self, packet):
@@ -333,6 +373,7 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                             to_call=user,
                             message_text=msg,
                         ))
+                ch.add_message(packet)
             else:
                 LOG.error(f"Channel {channel_name} not found")
                 tx.send(packets.MessagePacket(
