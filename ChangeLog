@@ -1,6 +1,22 @@
 CHANGES
 =======
 
+v0.0.3
+------
+
+* fix pep8
+* Updated README
+* Call registry
+* Allow no channel prefix in messages for user IFF
+* Added /leave w/o channel
+* require pbr
+* try to fix install
+
+v0.0.2
+------
+
+* fixed access to aprsd\_irc
+
 v0.0.1
 ------
 

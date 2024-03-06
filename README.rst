@@ -26,7 +26,7 @@ text in the message body:
 
 ::
 
-/join #lounge
+ /join #lounge
 
 This will join you to the default channel of #lounge.  You can then chat with others in that channel by
 sending messages to the channel.
@@ -43,7 +43,7 @@ Joining a channel
 -----------------
 ::
 
-/join #lounge
+ /join #lounge
 
 After you join the channel, you can send messages to the channel by sending an APRS message to 'IRC' with the following
 text in the message body:
@@ -55,7 +55,7 @@ Sending a message to a channel
 ------------------------------
 ::
 
-#lounge Hello World!
+ #lounge Hello World!
 
 Everyone that is in the channel #lounge will get your message sent to them.
 
@@ -77,7 +77,7 @@ text in the message body:
 
 ::
 
-/leave #lounge
+ /leave #lounge
 
 This will remove you from the #lounge channel.
 
@@ -85,7 +85,7 @@ If you are only in 1 channel you can simply send the following message to 'IRC':
 
 ::
 
-/leave
+ /leave
 
 This will remove you from the channel you are currently in.
 
@@ -98,7 +98,7 @@ text in the message body:
 
 ::
 
-/list
+ /list
 
 This will return a list of channels that are currently active on the server and how many users are in each channel.
 
@@ -111,15 +111,15 @@ That is typically installed into a virtualenv.  You can then install this extens
 
 ::
 
-pip install aprsd-irc-extension
+ pip install aprsd-irc-extension
 
 Then you can add the following to your aprsd config file:
 
 ::
 
-[aprsd-irc-extension]
-enabled = True
-default_channel = #lounge
+ [aprsd-irc-extension]
+ enabled = True
+ default_channel = #lounge
 
 
 Running the IRC server
@@ -128,12 +128,7 @@ Once you have installed the extension, you can start the server by running the f
 
 ::
 
-aprsd irc server --loglevel debug
-
-
-
-
-
+ aprsd irc server --loglevel debug
 
 
 
