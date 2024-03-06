@@ -14,7 +14,7 @@ from aprsd_irc_extension import cmds, utils
 from aprsd_irc_extension import conf  # noqa
 from aprsd import cli_helper, client, packets, stats
 from aprsd import threads as aprsd_threads
-from aprsd.threads import tx
+from aprsd.threads import tx, registry
 from aprsd.utils import objectstore
 
 
@@ -498,6 +498,11 @@ def server(ctx, flush):
         packet_queue=aprsd_threads.packet_queue,
     )
     channel_info_thread = ChannelInfoThread()
+
+    if CONF.aprs_registry.enabled:
+        LOG.info("Registry Enabled.  Starting Registry thread.")
+        registry_thread = registry.APRSRegistryThread()
+        registry_thread.start()
 
     if CONF.enable_beacon:
         LOG.info("Beacon Enabled.  Starting Beacon thread.")
