@@ -353,7 +353,7 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                     channel_name = ch.name
                     message = f"{ch.name} {message}"
                 elif count > 1:
-                    LOG.info(f"Failed to get channel from a user message. User in more than 1 channel")
+                    LOG.info("Failed to get channel from a user message. User in more than 1 channel")
                     tx.send(packets.MessagePacket(
                         from_call=CONF.callsign,
                         to_call=fromcall,
