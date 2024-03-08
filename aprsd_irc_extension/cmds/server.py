@@ -361,7 +361,7 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                     tx.send(packets.MessagePacket(
                         from_call=CONF.callsign,
                         to_call=fromcall,
-                        message_text="Need to specify channel when sending a message. /msg #channel msg",
+                        message_text="Need to specify channel when sending a message. '#channel msg'",
                     ))
                     return
                 else:
