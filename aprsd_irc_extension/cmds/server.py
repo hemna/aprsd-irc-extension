@@ -272,7 +272,11 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
         # if they are the last user to leave the channel, delete the channel
         if command_name == "/leave" or command_name == "/l":
             if not ch.users and not CONF.aprsd_irc_extension.default_channel:
-                IRChannels().remove_channel(ch.name)
+                LOG.warning(f"No more users in {ch.name} Messages({len(ch.messages)})")
+                # If there are no messages in the cnannel, delete it
+                if len(ch.messages) == 0:
+                    LOG.info(f"Removing channel {ch.name}")
+                    IRChannels().remove_channel(ch.name)
         return
 
     def process_irc_command(self, packet):
@@ -423,6 +427,7 @@ class ChannelInfoThread(aprsd_threads.APRSDThread):
             for ch in irc_channels:
                 ch = irc_channels.get(ch)
                 LOG.info(f"Channel: {ch.name} Users({len(ch.users)}): {ch.users}")
+                LOG.info(f"Channel: {ch.name} Messages({len(ch.messages)})")
         self._loop_cnt += 1
         time.sleep(1)
         return True
