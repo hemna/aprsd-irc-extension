@@ -83,3 +83,10 @@ update-requirements: dev  ## Update the requirements.txt and dev-requirements.tx
 	touch dev-requirements.txt
 	$(VENV)/pip-compile --resolver backtracking --annotation-style line requirements.in
 	$(VENV)/pip-compile --resolver backtracking --annotation-style line dev-requirements.in
+
+
+db-setup: dev  ## create the database
+	$(VENV)/alembic upgrade head
+
+db-revision: dev  ## Create a new revision
+	$(VENV)/alembic revision --autogenerate

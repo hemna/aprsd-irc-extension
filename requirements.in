@@ -3,3 +3,4 @@ oslo.config
 pbr
 alembic
 sqlalchemy
+functools
