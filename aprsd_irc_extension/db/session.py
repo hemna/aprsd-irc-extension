@@ -61,13 +61,13 @@ def close_session():
 
 def init_db_schema(engine):
     from aprsd_irc_extension.db import models
-    models.ModelBase.metadata.create_all(engine)
+    models.Base.metadata.create_all(engine)
     LOG.info("DB schema initialized")
 
 
 def wipe_and_init_db_schema(engine):
     from aprsd_irc_extension.db import models
-    models.ModelBase.metadata.drop_all(engine)
-    models.ModelBase.metadata.create_all(engine)
+    models.Base.metadata.drop_all(engine)
+    models.Base.metadata.create_all(engine)
     LOG.info("DB schema initialized")
 
