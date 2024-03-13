@@ -8,14 +8,18 @@ import time
 import click
 from oslo_config import cfg
 
+
 import aprsd
-import aprsd_irc_extension
-from aprsd_irc_extension import cmds, utils
-from aprsd_irc_extension import conf  # noqa
 from aprsd import cli_helper, client, packets, stats
 from aprsd import threads as aprsd_threads
 from aprsd.threads import tx, registry
 from aprsd.utils import objectstore
+
+from aprsd_irc_extension.db import models
+from aprsd_irc_extension.db import session as db_session
+import aprsd_irc_extension
+from aprsd_irc_extension import cmds, utils
+from aprsd_irc_extension import conf  # noqa
 
 
 CONF = cfg.CONF
@@ -35,7 +39,6 @@ def signal_handler(sig, frame):
         packets.PacketTrack().save()
         packets.WatchList().save()
         packets.SeenList().save()
-        IRChannels().save()
         LOG.info(stats.APRSDStats())
         # signal.signal(signal.SIGTERM, sys.exit(0))
         # sys.exit(0)
@@ -45,73 +48,126 @@ class InvalidChannelName(Exception):
     pass
 
 
-class IRCChannel:
-    """Base class for an IRC Channel."""
+class ChannelService:
+    """Class for handling channel related commands."""
 
-    def __init__(self, name):
-        self.name = name
-        self.users = set()
-        self.messages = []
-
-    def join(self, user):
-        self.users.add(user)
-        LOG.info(f"{user} has joined {self.name}")
+    @staticmethod
+    def join(channel: str, user: str) -> models.Channel:
+        """User wants to join a channel."""
+        LOG.info(f"{user} has joined {channel}")
+        session = db_session.get_session()
+        user_obj = models.ChannelUsers(user=user)
+        ch = models.Channel.find_by_name(session, channel)
+        ch.users.append(user_obj)
         pkt = packets.MessagePacket(
             from_call=CONF.callsign,
             to_call=user,
-            message_text=f"Welcome to channel {self.name}",
+            message_text=f"Welcome to channel {channel}",
         )
         tx.send(pkt)
         time.sleep(1)
         tx.send(packets.MessagePacket(
             from_call=CONF.callsign,
             to_call=user,
-            message_text=f"Use /leave {self.name} to leave",
+            message_text=f"Use /leave {channel} to leave",
         ))
+        ch.save(session)
+        session.remove()
+        return channel
 
-    def leave(self, user):
-        if user in self.users:
-            self.users.remove(user)
-            LOG.info(f"{user} has left {self.name}")
+    @staticmethod
+    def leave(channel: str, user: str) -> models.Channel:
+        """User wants to leave a channel."""
+        LOG.info(f"{user} wants to leave channel {channel}")
+        session = db_session.get_session()
+        ch = models.Channel.find_by_name(session, channel)
+        LOG.info(repr(ch))
+        found = False
+        for user_obj in ch.users:
+            if user_obj.user == user:
+                found = True
+                session.delete(user_obj)
+                session.flush()
+                session.commit()
+                pkt = packets.MessagePacket(
+                    from_call=CONF.callsign,
+                    to_call=user,
+                    message_text=f"Left channel {channel}",
+                )
+                tx.send(pkt)
+
+        if not found:
+            LOG.warning(f"{user} not in channel {channel}")
             pkt = packets.MessagePacket(
                 from_call=CONF.callsign,
                 to_call=user,
-                message_text=f"Left channel {self.name}",
-            )
-            tx.send(pkt)
-        else:
-            LOG.warning(f"{user} not in channel {self.name}")
-            pkt = packets.MessagePacket(
-                from_call=CONF.callsign,
-                to_call=user,
-                message_text=f"not in channel {self.name}",
+                message_text=f"not in channel {channel}",
             )
             tx.send(pkt)
 
-    def add_message(self, pkt):
-        self.messages.append(pkt)
+        session.remove()
+        return channel
 
-    def list(self, user):
-        IRChannels().list(user)
+    @staticmethod
+    def add_message(channel: str, pkt: packets.MessagePacket) -> models.Channel:
+        """Add a message to the channel."""
+        LOG.info(f"Adding message to channel {channel}")
+        session = db_session.get_session()
+        ch = models.Channel.find_by_name(session, channel)
+        ch.messages.append(models.ChannelMessages.new_message(pkt))
+        ch.save(session)
+        session.remove()
+        return channel
 
 
-class IRChannels(objectstore.ObjectStoreMixin):
+class IRChannels:
     """List of IRC Channels."""
     _instance = None
     lock = threading.Lock()
     data: dict = {}
+    db_session = None
 
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
-            cls._instance._init_store()
             cls._instance.data = {}
+            cls._instance._load()
         return cls._instance
 
-    def list(self, packet):
+    def __len__(self):
+        return len(self.data)
+
+    def __iter__(self):
+        return iter(self.data)
+
+    def _load(self):
+        LOG.info("IRChannels: Loading channels from DB")
+        session = db_session.get_session()
+        channels = session.query(models.Channel).all()
+        for ch in channels:
+            LOG.info(f"IRChannels: Loading channel {ch}")
+            users = []
+            for user in ch.users:
+                users.append(user.user)
+            LOG.info(f"IRChannels: Loading messages {len(ch.messages)}")
+            for message in ch.messages:
+                LOG.info(repr(message.packet))
+
+            self.data[ch.name] = users
+
+        LOG.info(f"IRChannels: Loaded {len(self.data)} channels from DB")
+        session.remove()
+
+
+    def get(self, id):
+        with self.lock:
+            return self.data[id]
+
+    def list(self, packet) -> None:
+        """Send a list of channels and count of users in channel."""
+        channels = models.Channel.get_all_channels()
         user = packet.from_call
-        for channel_name in self.data:
-            ch = self.get_channel(channel_name)
+        for ch in channels:
             pkt = packets.MessagePacket(
                 from_call=CONF.callsign,
                 to_call=user,
@@ -119,26 +175,33 @@ class IRChannels(objectstore.ObjectStoreMixin):
             )
             tx.send(pkt)
 
-    def add_channel(self, name):
+    def add_channel(self, name: str):
         if not name.startswith("#"):
             raise InvalidChannelName(
                 "Channel name must start with #")
         if name not in self.data:
-            self.data[name] = IRCChannel(name)
-        return self.data.get(name)
+            models.Channel.create_channel(name)
+            # initialize w/o users
+            self.data[name] = []
 
-    def remove_channel(self, name):
+    def remove_channel(self, name: str) -> None:
         if not name.startswith("#"):
             raise InvalidChannelName(
                 "Channel name must start with #")
         if name in self.data:
             del self.data[name]
 
-    def get_channel(self, name):
+    def get_channel(self, name: str) -> models.Channel:
         if not name.startswith("#"):
             raise InvalidChannelName(
                 "Channel name must start with #")
         return self.data.get(name)
+
+    def channel_exists(self, name: str) -> bool:
+        if not name.startswith("#"):
+            raise InvalidChannelName(
+                "Channel name must start with #")
+        return name in self.data
 
 
 class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
@@ -205,15 +268,22 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
 
     def _user_channel_count(self, user):
         """How many channels is a user in?"""
+        LOG.info(f"Checking how many channels {user} is in")
+        LOG.info(f"IRChannels().data: {IRChannels().data}")
         count = 0
         found = {}
-        for ch in IRChannels().data:
-            ch = IRChannels().get(ch)
-            if user in ch.users:
-                count += 1
-                found[ch.name] = ch
-                continue
+        session = db_session.get_session()
+        for name in IRChannels():
+            ch = models.Channel.find_by_name(session, name)
+            LOG.info(f"Checking channel {ch.name} : {ch.users}")
+            for user_ojb in ch.users:
+                if user_ojb.user == user:
+                    count += 1
+                    found[ch.name] = ch.name
+                    continue
+        session.remove()
 
+        LOG.info(f"User {user} is in {count} channels")
         return count, found
 
     def process_channel_command(self, packet, command_name, channel_name):
@@ -227,8 +297,7 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
             if command_name == "/leave" or command_name == "/l":
                 count, found = self._user_channel_count(fromcall)
                 if count == 1:
-                    ch = found.popitem()[1]
-                    channel_name = ch.name
+                    channel_name = found.popitem()[1]
                 else:
                     channel_names = ", ".join(found.keys())
                     LOG.info(f"User {fromcall} is in {count} channels ({channel_names}). "
@@ -240,8 +309,11 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                     ))
                     return
 
+        session = None
         try:
-            ch = IRChannels().get_channel(channel_name)
+            if IRChannels().channel_exists(channel_name):
+                session = db_session.get_session()
+                ch = models.Channel.find_by_name(session, channel_name)
         except InvalidChannelName as e:
             LOG.error(f"Failed to add channel: {e}")
             tx.send(packets.MessagePacket(
@@ -250,6 +322,9 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                 message_text="Channel name must start with #",
             ))
             return
+        finally:
+            if session:
+                session.remove()
 
         if not ch:
             ch = IRChannels().add_channel(channel_name)
@@ -266,17 +341,10 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                 )
             )
             return
-        cmd = getattr(ch, cmd_dict["cmd"])
-        cmd(fromcall)
 
-        # if they are the last user to leave the channel, delete the channel
-        if command_name == "/leave" or command_name == "/l":
-            if not ch.users and not CONF.aprsd_irc_extension.default_channel:
-                LOG.warning(f"No more users in {ch.name} Messages({len(ch.messages)})")
-                # If there are no messages in the cnannel, delete it
-                if len(ch.messages) == 0:
-                    LOG.info(f"Removing channel {ch.name}")
-                    IRChannels().remove_channel(ch.name)
+        svc = ChannelService
+        cmd = getattr(svc, cmd_dict["cmd"])
+        cmd(channel_name, fromcall)
         return
 
     def process_irc_command(self, packet):
@@ -347,15 +415,17 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
             # If not a channel command, then it's a message
             # to a channel or user
             channel_name = message.split()[0]
-            LOG.info(f"Send message to channel {channel_name}")
+            LOG.info(f"Send message to channel {channel_name}??")
+            ch = None
+            session = db_session.get_session()
             try:
                 ch = irc_channels.get_channel(channel_name)
             except InvalidChannelName as e:
                 count, found = self._user_channel_count(fromcall)
                 if count == 1:
-                    ch = found.popitem()[1]
-                    channel_name = ch.name
-                    message = f"{ch.name} {message}"
+                    channel_name = found.popitem()[1]
+                    message = f"{channel_name} {message}"
+                    ch = models.Channel.find_by_name(session, channel_name)
                 elif count > 1:
                     LOG.info("Failed to get channel from a user message. User in more than 1 channel")
                     tx.send(packets.MessagePacket(
@@ -363,6 +433,16 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                         to_call=fromcall,
                         message_text="Need to specify channel when sending a message. '#channel msg'",
                     ))
+                    session.remove()
+                    return
+                elif count == 0:
+                    LOG.error(f"User is not in any channels: {e}")
+                    tx.send(packets.MessagePacket(
+                        from_call=CONF.callsign,
+                        to_call=fromcall,
+                        message_text="Must join a channel to send a message. try /list",
+                    ))
+                    session.remove()
                     return
                 else:
                     LOG.error(f"Failed to get channel: {e}")
@@ -371,10 +451,16 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                         to_call=fromcall,
                         message_text="Channel name must start with #",
                     ))
+                    session.remove()
                     return
 
             if ch:
-                if fromcall not in ch.users:
+                for user_obj in ch.users:
+                    found = False
+                    if user_obj.user == fromcall:
+                        found = True
+
+                if not found:
                     LOG.error(f"{fromcall} not in channel {channel_name}")
                     tx.send(packets.MessagePacket(
                         from_call=CONF.callsign,
@@ -386,18 +472,19 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                         to_call=fromcall,
                         message_text=f"Send /join {channel_name} to join channel",
                     ))
-
+                    session.remove()
                     return
 
                 msg = message.replace(ch.name, f"{ch.name} {fromcall}")
-                for user in ch.users:
-                    if user != fromcall:
+                for user_obj in ch.users:
+                    if user_obj.user != fromcall:
                         tx.send(packets.MessagePacket(
                             from_call=CONF.callsign,
-                            to_call=user,
+                            to_call=user_obj.user,
                             message_text=msg,
                         ))
-                ch.add_message(packet)
+                session.remove()
+                ChannelService.add_message(ch.name, packet)
             else:
                 LOG.error(f"Channel {channel_name} not found")
                 tx.send(packets.MessagePacket(
@@ -423,11 +510,11 @@ class ChannelInfoThread(aprsd_threads.APRSDThread):
     def loop(self):
         # Only dump out the stats every 60 seconds
         if self._loop_cnt % 60 == 0:
-            irc_channels = IRChannels()
+            session = db_session.get_session()
+            irc_channels = session.query(models.Channel).all()
             for ch in irc_channels:
-                ch = irc_channels.get(ch)
-                LOG.info(f"Channel: {ch.name} Users({len(ch.users)}): {ch.users}")
-                LOG.info(f"Channel: {ch.name} Messages({len(ch.messages)})")
+                #LOG.info(f"Channel: {ch.name} Users({len(ch.users)}): {ch.users}")
+                LOG.info(repr(ch))
         self._loop_cnt += 1
         time.sleep(1)
         return True
@@ -481,14 +568,12 @@ def server(ctx, flush):
         packets.PacketTrack().flush()
         packets.WatchList().flush()
         packets.SeenList().flush()
-        IRChannels().flush()
     else:
         # Try and load saved MsgTrack list
         LOG.debug("Loading saved objects.")
         packets.PacketTrack().load()
         packets.WatchList().load()
         packets.SeenList().load()
-        IRChannels().load()
 
     # Make sure the #lounge channel exists
     IRChannels().add_channel("#lounge")

@@ -16,7 +16,12 @@ irc_opts = [
         "default_channel",
         default="#lounge",
         help="This default channel will always exist.",
-    )
+    ),
+    cfg.StrOpt(
+        "db_dsn",
+        default="sqlite:////tmp/aprsd-irc.db",
+        help="The DSN URI for the database",
+    ),
 ]
 
 ALL_OPTS = irc_opts

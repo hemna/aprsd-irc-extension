@@ -1,3 +1,6 @@
 click
 oslo.config
 pbr
+alembic
+sqlalchemy
+functools
