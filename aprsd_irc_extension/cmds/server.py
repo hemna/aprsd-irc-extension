@@ -452,8 +452,8 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                     return
 
             if ch:
+                found = False
                 for user_obj in ch.users:
-                    found = False
                     if user_obj.user == fromcall:
                         found = True
 
