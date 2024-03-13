@@ -534,6 +534,7 @@ class ChannelInfoThread(aprsd_threads.APRSDThread):
 @click.pass_context
 @cli_helper.process_standard_options
 def server(ctx, flush):
+    """Run an APRS IRC server."""
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
 
