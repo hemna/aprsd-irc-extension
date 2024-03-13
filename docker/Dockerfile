@@ -1,5 +1,4 @@
-from hemna6969/aprsd:latest
-
+from hemna6969/aprsd:master
 
 add bin/irc.sh /app
 

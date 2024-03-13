@@ -40,4 +40,6 @@ fi
 
 export COLUMNS=200
 python3 -m rich.diagnose
+pip freeze
+aprsd irc db -c $APRSD_CONFIG
 exec aprsd irc server -c $APRSD_CONFIG --loglevel ${LOG_LEVEL}
