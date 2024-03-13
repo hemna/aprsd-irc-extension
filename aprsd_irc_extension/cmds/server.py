@@ -150,9 +150,6 @@ class IRChannels:
             for user in ch.users:
                 users.append(user.user)
             LOG.info(f"IRChannels: Loading messages {len(ch.messages)}")
-            for message in ch.messages:
-                LOG.info(repr(message.packet))
-
             self.data[ch.name] = users
 
         LOG.info(f"IRChannels: Loaded {len(self.data)} channels from DB")

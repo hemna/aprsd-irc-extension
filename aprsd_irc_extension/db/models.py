@@ -34,7 +34,7 @@ class Channel(Base):
     id = sa.Column(sa.Integer, sa.Sequence('channel_id_seq'), primary_key=True)
     name = sa.Column(sa.Text, nullable=False)
     messages: Mapped[List["ChannelMessages"]] = relationship(
-        order_by="desc(ChannelMessages.timestamp)",
+        order_by="ChannelMessages.timestamp",
         back_populates="channel"
     )  # type: ignore
     users: Mapped[List["ChannelUsers"]] = relationship(
@@ -47,6 +47,17 @@ class Channel(Base):
         users = [u.user for u in self.users]
         return (f"<Channel(name='{self.name}', users({len(self.users)})='{users}'), "
                 f"messages({len(self.messages)})>")
+
+    def to_json(self, include_messages=True):
+        our_json = {
+            "name": self.name,
+            "users": [u.user for u in self.users],
+            #"messages": [m.message for m in self.messages]
+        }
+        if include_messages:
+            our_json["messages"] = [m.packet.to_json() for m in self.messages]
+
+        return our_json
 
     @staticmethod
     def find_by_name(session, name: str) -> "Channel":
@@ -110,6 +121,10 @@ class ChannelMessages(Base):
     message = sa.Column(sa.Text, nullable=False)
     timestamp = sa.Column(sa.DateTime, server_default=sa.func.now(), nullable=False)
 
+    def __repr__(self):
+        return (f"<ChannelMessages(channel='{self.channel.name}', message='{self.message}', "
+               f"time='{self.timestamp}')>")
+
     @staticmethod
     def new_message(packet: aprsd_packets.Packet) -> "ChannelMessages":
         obj = ChannelMessages(message=packet.raw)
@@ -117,4 +132,6 @@ class ChannelMessages(Base):
 
     @property
     def packet(self):
-        return aprsd_packets.Packet.factory(aprslib.parse(self.message))
+        pkt = aprsd_packets.Packet.factory(aprslib.parse(self.message))
+        pkt.timestamp = self.timestamp
+        return pkt
