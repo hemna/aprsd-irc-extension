@@ -49,9 +49,7 @@ class MySession:
 
 
 def get_session():
-    ses = MySession().session
-    LOG.debug(f"session {ses} {ses.info}")
-    return ses
+    return MySession().session
 
 
 def close_session():
