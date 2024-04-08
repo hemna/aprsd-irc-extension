@@ -12,7 +12,7 @@ from oslo_config import cfg
 import aprsd
 from aprsd import cli_helper, client, packets, stats
 from aprsd import threads as aprsd_threads
-from aprsd.threads import tx, registry
+from aprsd.threads import tx, registry, keep_alive
 from aprsd.utils import objectstore
 
 from aprsd_irc_extension.db import models
@@ -576,7 +576,7 @@ def server(ctx, flush):
     # Make sure the #lounge channel exists
     IRChannels().add_channel("#lounge")
 
-    keepalive = aprsd_threads.KeepAliveThread()
+    keepalive = keep_alive.KeepAliveThread()
     keepalive.start()
 
     rx_thread = aprsd_threads.APRSDDupeRXThread(
@@ -600,7 +600,7 @@ def server(ctx, flush):
     rx_thread.start()
     process_thread.start()
     channel_info_thread.start()
-    packets.PacketTrack().restart()
+    packets.PacketTrack()
 
     rx_thread.join()
     keepalive.join()
