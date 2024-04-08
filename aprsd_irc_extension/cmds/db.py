@@ -1,9 +1,4 @@
-import datetime
 import logging
-import threading
-import signal
-import sys
-import time
 
 import click
 from oslo_config import cfg
@@ -13,7 +8,7 @@ from aprsd.conf import log as aprsd_conf_log
 
 from aprsd_irc_extension.db import session as db_session
 import aprsd_irc_extension
-from aprsd_irc_extension import cmds, utils
+from aprsd_irc_extension import cmds
 from aprsd_irc_extension import conf  # noqa
 
 

@@ -1,7 +1,5 @@
 import logging
 from functools import lru_cache
-#from typing import Generator
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
@@ -10,6 +8,7 @@ from aprsd_irc_extension import conf  # noqa
 
 CONF = cfg.CONF
 LOG = logging.getLogger("APRSD")
+
 
 @lru_cache
 def get_engine():
@@ -22,15 +21,16 @@ def get_engine():
 def create_session() -> scoped_session:
     engine = get_engine()
     LOG.info(f"Engine {engine}")
-    Session = scoped_session(
+    session = scoped_session(
         sessionmaker(autoflush=True, bind=engine)
     )
-    return Session
+    return session
 
 
 class MySession:
     _session = None
     _instance = None
+
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -68,4 +68,3 @@ def wipe_and_init_db_schema(engine):
     models.Base.metadata.drop_all(engine)
     models.Base.metadata.create_all(engine)
     LOG.info("DB schema initialized")
-

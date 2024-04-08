@@ -2,7 +2,7 @@ import logging
 from typing import List
 
 import sqlalchemy as sa
-from sqlalchemy.orm import RelationshipProperty, registry, relationship
+from sqlalchemy.orm import registry, relationship
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.sql.schema import ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped
@@ -52,7 +52,7 @@ class Channel(Base):
         our_json = {
             "name": self.name,
             "users": [u.user for u in self.users],
-            #"messages": [m.message for m in self.messages]
+            # "messages": [m.message for m in self.messages]
         }
         if include_messages:
             our_json["messages"] = [m.packet.to_json() for m in self.messages]
@@ -123,7 +123,7 @@ class ChannelMessages(Base):
 
     def __repr__(self):
         return (f"<ChannelMessages(channel='{self.channel.name}', message='{self.message}', "
-               f"time='{self.timestamp}')>")
+                f"time='{self.timestamp}')>")
 
     @staticmethod
     def new_message(packet: aprsd_packets.Packet) -> "ChannelMessages":

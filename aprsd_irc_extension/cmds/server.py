@@ -13,7 +13,6 @@ import aprsd
 from aprsd import cli_helper, client, packets, stats
 from aprsd import threads as aprsd_threads
 from aprsd.threads import tx, registry, keep_alive
-from aprsd.utils import objectstore
 
 from aprsd_irc_extension.db import models
 from aprsd_irc_extension.db import session as db_session
@@ -154,7 +153,6 @@ class IRChannels:
 
         LOG.info(f"IRChannels: Loaded {len(self.data)} channels from DB")
         session.remove()
-
 
     def get(self, id):
         with self.lock:
@@ -510,7 +508,6 @@ class ChannelInfoThread(aprsd_threads.APRSDThread):
             session = db_session.get_session()
             irc_channels = session.query(models.Channel).all()
             for ch in irc_channels:
-                #LOG.info(f"Channel: {ch.name} Users({len(ch.users)}): {ch.users}")
                 LOG.info(repr(ch))
         self._loop_cnt += 1
         time.sleep(1)
