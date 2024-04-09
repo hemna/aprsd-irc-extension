@@ -14,6 +14,7 @@ from aprsd import cli_helper, client, packets, stats
 from aprsd import threads as aprsd_threads
 from aprsd.threads import tx, registry, keep_alive
 from aprsd.threads import stats as stats_thread
+from aprsd.threads import log_monitor
 
 from aprsd_irc_extension.db import models
 from aprsd_irc_extension.db import session as db_session
@@ -597,6 +598,10 @@ def server(ctx, flush):
         LOG.info("Beacon Enabled.  Starting Beacon thread.")
         bcn_thread = tx.BeaconSendThread()
         bcn_thread.start()
+
+    if CONF.admin.web_enabled:
+        log_monitor_thread = log_monitor.LogMonitorThread()
+        log_monitor_thread.start()
 
     rx_thread.start()
     process_thread.start()
