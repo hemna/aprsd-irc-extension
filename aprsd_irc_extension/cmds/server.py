@@ -13,6 +13,7 @@ import aprsd
 from aprsd import cli_helper, client, packets, stats
 from aprsd import threads as aprsd_threads
 from aprsd.threads import tx, registry, keep_alive
+from aprsd.threads import stats as stats_thread
 
 from aprsd_irc_extension.db import models
 from aprsd_irc_extension.db import session as db_session
@@ -572,6 +573,9 @@ def server(ctx, flush):
 
     # Make sure the #lounge channel exists
     IRChannels().add_channel("#lounge")
+
+    stats_store_thread = stats_thread.APRSDStatsStoreThread()
+    stats_store_thread.start()
 
     keepalive = keep_alive.KeepAliveThread()
     keepalive.start()

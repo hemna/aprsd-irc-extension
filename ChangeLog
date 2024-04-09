@@ -1,9 +1,29 @@
 CHANGES
 =======
 
+v0.0.4
+------
+
+* Fixed pep8 violations
+* prep for new aprsd after stats-rework
+* try and fix user find
+* remove functools
+* remove log entry for getting session
+* Use master
+* Use Base for init db
+* Added new db commands
+* updated requirements
+* Include messages
+* DB working
+* added alembic
+* fixed messaging
+* shorten message a little bit
+* Don't delete the channel if there are messages in it
+
 v0.0.3
 ------
 
+* v0.0.3
 * fix pep8
 * Updated README
 * Call registry
