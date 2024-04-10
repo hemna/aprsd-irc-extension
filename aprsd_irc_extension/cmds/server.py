@@ -40,7 +40,6 @@ def signal_handler(sig, frame):
         packets.PacketTrack().save()
         packets.WatchList().save()
         packets.SeenList().save()
-        LOG.info(stats.APRSDStats())
         # signal.signal(signal.SIGTERM, sys.exit(0))
         # sys.exit(0)
 
@@ -60,6 +59,8 @@ class ChannelService:
         user_obj = models.ChannelUsers(user=user)
         ch = models.Channel.find_by_name(session, channel)
         ch.users.append(user_obj)
+        ch.save(session)
+        session.remove()
         pkt = packets.MessagePacket(
             from_call=CONF.callsign,
             to_call=user,
@@ -72,9 +73,7 @@ class ChannelService:
             to_call=user,
             message_text=f"Use /leave {channel} to leave",
         ))
-        ch.save(session)
-        session.remove()
-        return channel
+        return ch
 
     @staticmethod
     def leave(channel: str, user: str) -> models.Channel:
@@ -192,7 +191,8 @@ class IRChannels:
         if not name.startswith("#"):
             raise InvalidChannelName(
                 "Channel name must start with #")
-        return self.data.get(name)
+        session = db_session.get_session()
+        return models.Channel.find_by_name(session, name)
 
     def channel_exists(self, name: str) -> bool:
         if not name.startswith("#"):
@@ -412,7 +412,7 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
             # If not a channel command, then it's a message
             # to a channel or user
             channel_name = message.split()[0]
-            LOG.info(f"Send message to channel {channel_name}??")
+            LOG.info(f"Send message to channel {channel_name}")
             ch = None
             session = db_session.get_session()
             try:
@@ -452,6 +452,8 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                     return
 
             if ch:
+                LOG.info(f"Channel {channel_name} found")
+                LOG.info(repr(ch))
                 found = False
                 for user_obj in ch.users:
                     if user_obj.user == fromcall:
