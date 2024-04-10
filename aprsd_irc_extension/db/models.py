@@ -34,8 +34,9 @@ class Channel(Base):
     id = sa.Column(sa.Integer, sa.Sequence('channel_id_seq'), primary_key=True)
     name = sa.Column(sa.Text, nullable=False)
     messages: Mapped[List["ChannelMessages"]] = relationship(
-        order_by="ChannelMessages.timestamp",
-        back_populates="channel"
+        order_by="desc(ChannelMessages.timestamp)",
+        back_populates="channel",
+        lazy="dynamic"
     )  # type: ignore
     users: Mapped[List["ChannelUsers"]] = relationship(
         order_by="desc(ChannelUsers.user)",
@@ -46,7 +47,7 @@ class Channel(Base):
     def __repr__(self):
         users = [u.user for u in self.users]
         return (f"<Channel(name='{self.name}', users({len(self.users)})='{users}'), "
-                f"messages({len(self.messages)})>")
+                f"messages({len(self.messages.all())})>")
 
     def to_json(self, include_messages=True):
         our_json = {
