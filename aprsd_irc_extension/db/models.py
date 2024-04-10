@@ -133,6 +133,6 @@ class ChannelMessages(Base):
 
     @property
     def packet(self):
-        pkt = aprsd_packets.Packet.factory(aprslib.parse(self.message))
+        pkt = aprsd_packets.factory(aprslib.parse(self.message))
         pkt.timestamp = self.timestamp
         return pkt
