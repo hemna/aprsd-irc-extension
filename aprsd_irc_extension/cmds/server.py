@@ -58,15 +58,29 @@ class ChannelService:
         session = db_session.get_session()
         user_obj = models.ChannelUsers(user=user)
         ch = models.Channel.find_by_name(session, channel)
-        ch.users.append(user_obj)
-        ch.save(session)
-        session.remove()
-        pkt = packets.MessagePacket(
-            from_call=CONF.callsign,
-            to_call=user,
-            message_text=f"Welcome to channel {channel}",
-        )
-        tx.send(pkt)
+        users = ch.users
+        found = False
+        for u in users:
+            if u.user == user:
+                found = True
+        LOG.warning(f"Users: {users}")
+        if not found:
+            ch.users.append(user_obj)
+            ch.save(session)
+            session.remove()
+            pkt = packets.MessagePacket(
+                from_call=CONF.callsign,
+                to_call=user,
+                message_text=f"Welcome to channel {channel}",
+            )
+            tx.send(pkt)
+        else:
+            pkt = packets.MessagePacket(
+                from_call=CONF.callsign,
+                to_call=user,
+                message_text=f"Already in channel {channel}",
+            )
+            tx.send(pkt)
         time.sleep(1)
         tx.send(packets.MessagePacket(
             from_call=CONF.callsign,
