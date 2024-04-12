@@ -193,6 +193,29 @@ class IRChannels:
             message_text="Pong",
         )
         tx.send(pkt)
+    def me(self, packet) -> None:
+        """What channels am I in?"""
+        username = packet.from_call
+        user_objs = None
+        try:
+            user_objs = models.ChannelUsers.find_by_name(username)
+        except Exception as e:
+            LOG.error(f"Failed to get user {username}")
+            LOG.error(e)
+
+        if user_objs:
+            LOG.warning(user_objs)
+            channel_names = []
+            for user in user_objs:
+                channel_names.append(user.channel.name)
+
+            pkt = packets.MessagePacket(
+                from_call=CONF.callsign,
+                to_call=username,
+                message_text=f"You are in {len(channel_names)} channels: {', '.join(channel_names)}",
+            )
+            tx.send(pkt)
+
 
     def add_channel(self, name: str):
         if not name:
@@ -254,6 +277,8 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                   "desc": "/list or /ls - list all channels"},
         "/ping": {"cmd": "ping",
                   "desc": "/ping - ping the server"},
+        "/me": {"cmd": "me",
+                "desc": "/me - What rooms am I in?"},
     }
     short_server_commands = {
         "/ls": {"cmd": "list",

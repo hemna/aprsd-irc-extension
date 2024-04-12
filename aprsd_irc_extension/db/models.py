@@ -118,6 +118,19 @@ class ChannelUsers(Base):
         obj = ChannelUsers(user=user)
         return obj
 
+    @staticmethod
+    def find_by_name(name: str) -> "ChannelUsers":
+        session = db_session.get_session()
+        try:
+            user = session.query(
+                ChannelUsers
+            ).filter(
+                ChannelUsers.user == name
+            ).all()
+            return user
+        except sa.orm.exc.NoResultFound:
+            return None
+
     def __repr__(self):
         return f"<ChannelUser(user='{self.user}', channel='{self.channel}')>"
 
