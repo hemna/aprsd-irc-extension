@@ -188,6 +188,7 @@ class IRChannels:
         if not name.startswith("#"):
             raise InvalidChannelName(
                 "Channel name must start with #")
+        name = name.lower()
         if name not in self.data:
             models.Channel.create_channel(name)
             # initialize w/o users
@@ -362,7 +363,7 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
         msg_parts = message.split()
         command_name = msg_parts[0]
         try:
-            channel_name = msg_parts[1]
+            channel_name = msg_parts[1].lower()
         except IndexError:
             channel_name = None
         self.process_channel_command(packet, command_name, channel_name)
@@ -424,7 +425,7 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
 
             # If not a channel command, then it's a message
             # to a channel or user
-            channel_name = message.split()[0]
+            channel_name = message.split()[0].lower()
             LOG.info(f"Send message to channel {channel_name}")
             ch = None
             session = db_session.get_session()
