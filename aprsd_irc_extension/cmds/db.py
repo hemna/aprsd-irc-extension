@@ -2,6 +2,7 @@ import logging
 
 import click
 from oslo_config import cfg
+from rich.console import Console
 
 from aprsd import cli_helper
 from aprsd.conf import log as aprsd_conf_log
@@ -10,6 +11,7 @@ from aprsd_irc_extension.db import session as db_session
 import aprsd_irc_extension
 from aprsd_irc_extension import cmds
 from aprsd_irc_extension import conf  # noqa
+from aprsd_irc_extension.db import models
 
 
 CONF = cfg.CONF
@@ -68,3 +70,55 @@ def wipe_db(ctx, flush):
 
     engine = db_session.get_engine()
     db_session.wipe_and_init_db_schema(engine)
+
+
+@cmds.irc.command()
+@cli_helper.add_options(cli_helper.common_options)
+@click.argument(
+    "channel_name",
+)
+@click.pass_context
+@cli_helper.process_standard_options
+def delete_channel(ctx, channel_name):
+    """Delete a channel from the DB."""
+    LOG.info(f"aprsd-irc-extension version: {aprsd_irc_extension.__version__}")
+    if not channel_name.startswith("#"):
+        channel_name = f"#{channel_name}"
+
+    if click.confirm(f"Are you sure you want to delete Channel '{channel_name}'?"):
+        LOG.info(f"Deleting Channel '{channel_name}'")
+        try:
+            models.Channel.delete_channel(channel_name)
+        except Exception as ex:
+            LOG.error(f"Error deleting Channel '{channel_name}': {ex}")
+
+@cmds.irc.command()
+@cli_helper.add_options(cli_helper.common_options)
+@click.argument("channel_name")
+@click.pass_context
+@cli_helper.process_standard_options
+def create_channel(ctx, channel_name):
+    """Create a channel in the DB."""
+    LOG.info(f"aprsd-irc-extension version: {aprsd_irc_extension.__version__}")
+    if not channel_name.startswith("#"):
+        channel_name = f"#{channel_name}"
+
+    if click.confirm(f"Are you sure you want to create Channel '{channel_name}'?"):
+        LOG.info(f"Creating Channel '{channel_name}'")
+        try:
+            models.Channel.create_channel(channel_name)
+        except Exception as ex:
+            LOG.error(f"Error creating Channel '{channel_name}': {ex}")
+
+@cmds.irc.command()
+@cli_helper.add_options(cli_helper.common_options)
+@click.pass_context
+@cli_helper.process_standard_options
+def list_channels(ctx):
+    """Delete a channel from the DB."""
+    LOG.info(f"aprsd-irc-extension version: {aprsd_irc_extension.__version__}")
+    c = Console()
+
+    channels = models.Channel.get_all_channels()
+    for channel in channels:
+        c.print(channel)

@@ -91,6 +91,16 @@ class Channel(Base):
         session.add(self)
         session.commit()
 
+    @staticmethod
+    def delete_channel(name: str) -> None:
+        session = db_session.get_session()
+        channel = Channel.find_by_name(session, name)
+        if channel:
+            session.delete(channel)
+            session.commit()
+        else:
+            LOG.warning(f"Channel '{name}' not found")
+
 
 class ChannelUsers(Base):
     __tablename__ = "channel_users"
