@@ -185,9 +185,18 @@ class IRChannels:
             tx.send(pkt)
 
     def add_channel(self, name: str):
+        if not name:
+            raise InvalidChannelName(
+                "Channel name must not be empty.")
         if not name.startswith("#"):
             raise InvalidChannelName(
                 "Channel name must start with #")
+        if len(name) > 10:
+            raise InvalidChannelName(
+                "Channel name must be 10 characters or less")
+        if not name[1:].isalnum():
+            raise InvalidChannelName(
+                "Channel name must be alphanumeric only")
         name = name.lower()
         if name not in self.data:
             models.Channel.create_channel(name)
@@ -347,7 +356,25 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                 session.remove()
 
         if not ch:
-            ch = IRChannels().add_channel(channel_name)
+            try:
+                ch = IRChannels().add_channel(channel_name)
+            except InvalidChannelName as e:
+                LOG.error(f"Failed to add channel: {e}")
+                tx.send(packets.MessagePacket(
+                    from_call=CONF.callsign,
+                    to_call=fromcall,
+                    message_text=str(e),
+                ))
+                return
+            except Exception as e:
+                LOG.error(f"Failed to add channel: {e}")
+                tx.send(packets.MessagePacket(
+                    from_call=CONF.callsign,
+                    to_call=fromcall,
+                    message_text=f"Failed to add channel {channel_name}",
+                ))
+                return
+
 
         cmd_dict = self.get_channel_command(message)
         LOG.warning(f"cmd_dict: {cmd_dict}")
