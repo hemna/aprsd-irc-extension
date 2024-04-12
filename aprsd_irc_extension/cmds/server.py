@@ -319,6 +319,15 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                         message_text="Need to specify channel when leaving. /leave #channel",
                     ))
                     return
+            else:
+                # not sure what they are trying to do here.
+                LOG.error(f"Unknown command with no channel_name '{message}'")
+                tx.send(packets.MessagePacket(
+                    from_call=CONF.callsign,
+                    to_call=fromcall,
+                    message_text="Unknown command",
+                ))
+                return
 
         session = None
         try:
