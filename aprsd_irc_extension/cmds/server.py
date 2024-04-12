@@ -184,6 +184,16 @@ class IRChannels:
             )
             tx.send(pkt)
 
+    def ping(self, packet) -> None:
+        """Ping the server."""
+        user = packet.from_call
+        pkt = packets.MessagePacket(
+            from_call=CONF.callsign,
+            to_call=user,
+            message_text="Pong",
+        )
+        tx.send(pkt)
+
     def add_channel(self, name: str):
         if not name:
             raise InvalidChannelName(
@@ -242,6 +252,8 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
     server_commands = {
         "/list": {"cmd": "list",
                   "desc": "/list or /ls - list all channels"},
+        "/ping": {"cmd": "ping",
+                  "desc": "/ping - ping the server"},
     }
     short_server_commands = {
         "/ls": {"cmd": "list",
