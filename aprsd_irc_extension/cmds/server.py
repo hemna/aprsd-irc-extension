@@ -211,7 +211,7 @@ class IRChannels:
                 from_call=CONF.callsign,
                 to_call=user,
                 message_text=f"Channel {ch.name} Users({len(ch.users)})",
-
+            )
             tx.send(pkt)
 
     def ping(self, packet) -> None:
