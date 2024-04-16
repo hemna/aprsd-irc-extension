@@ -27,6 +27,36 @@ CONF = cfg.CONF
 LOG = logging.getLogger("APRSD")
 
 
+SERVER_COMMANDS = {
+    "/list": {"cmd": "list",
+              "desc": "/list or /ls - list all channels"},
+    "/ping": {"cmd": "ping",
+              "desc": "/ping - ping the server"},
+    "/me": {"cmd": "me",
+            "desc": "/me - What channels am I in?"},
+    "/help": {"cmd": "help",
+              "desc": "/help - list all commands"},
+}
+
+SERVER_SHORT_COMMANDS = {
+    "/ls": {"cmd": "list",
+            "desc": "/list or /ls - list all channels"},
+}
+
+CHANNEL_COMMANDS =  {
+    "/join": {"cmd": "join",
+              "desc": "/join #channel or /j #channel - Join a channel"},
+    "/leave": {"cmd": "leave",
+               "desc": "/leave #channel or /l #channel - Leave a channel"},
+}
+
+CHANNEL_SHORT_COMMANDS = {
+    "/j": {"cmd": "join",
+           "desc": "/join #channel or /j #channel - Join a channel"},
+    "/l": {"cmd": "leave",
+           "desc": "/leave #channel or /l #channel - Leave a channel"},
+}
+
 def signal_handler(sig, frame):
     click.echo("signal_handler: called")
     aprsd_threads.APRSDThreadList().stop_all()
@@ -181,7 +211,7 @@ class IRChannels:
                 from_call=CONF.callsign,
                 to_call=user,
                 message_text=f"Channel {ch.name} Users({len(ch.users)})",
-            )
+
             tx.send(pkt)
 
     def ping(self, packet) -> None:
@@ -193,6 +223,7 @@ class IRChannels:
             message_text="Pong",
         )
         tx.send(pkt)
+
     def me(self, packet) -> None:
         """What channels am I in?"""
         username = packet.from_call
@@ -215,7 +246,32 @@ class IRChannels:
                 message_text=f"You are in {len(channel_names)} channels: {', '.join(channel_names)}",
             )
             tx.send(pkt)
+        else:
+            pkt = packets.MessagePacket(
+                from_call=CONF.callsign,
+                to_call=username,
+                message_text="You are not in a channel",
+            )
+            tx.send(pkt)
 
+
+    def help(self, packet) -> None:
+        fromcall = packet.from_call
+        LOG.info(f"Send help message to {fromcall}")
+        for command in CHANNEL_COMMANDS:
+            cmd = CHANNEL_COMMANDS.get(command)
+            tx.send(packets.MessagePacket(
+                from_call=CONF.callsign,
+                to_call=fromcall,
+                message_text=f"{cmd['desc']}",
+            ))
+        for command in SERVER_COMMANDS:
+            cmd = SERVER_COMMANDS.get(command)
+            tx.send(packets.MessagePacket(
+                from_call=CONF.callsign,
+                to_call=fromcall,
+                message_text=f"{cmd['desc']}",
+            ))
 
     def add_channel(self, name: str):
         if not name:
@@ -258,69 +314,43 @@ class IRChannels:
 
 
 class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
-    # Commands for IRC Channels
-    commands = {
-        "/join": {"cmd": "join",
-                  "desc": "/join #channel or /j #channel - Join a channel"},
-        "/leave": {"cmd": "leave",
-                   "desc": "/leave #channel or /l #channel - Leave a channel"},
-    }
-    short_commands = {
-        "/j": {"cmd": "join",
-               "desc": "/join #channel or /j #channel - Join a channel"},
-        "/l": {"cmd": "leave",
-               "desc": "/leave #channel or /l #channel - Leave a channel"},
-    }
-
-    server_commands = {
-        "/list": {"cmd": "list",
-                  "desc": "/list or /ls - list all channels"},
-        "/ping": {"cmd": "ping",
-                  "desc": "/ping - ping the server"},
-        "/me": {"cmd": "me",
-                "desc": "/me - What rooms am I in?"},
-    }
-    short_server_commands = {
-        "/ls": {"cmd": "list",
-                "desc": "/list or /ls - list all channels"},
-    }
 
     def is_channel_command(self, message):
         msg_parts = message.split()
-        for command in self.commands:
+        for command in CHANNEL_COMMANDS:
             if message.startswith(command):
                 return True
-        for command in self.short_commands:
+        for command in CHANNEL_SHORT_COMMANDS:
             if msg_parts[0] == command:
                 return True
         return False
 
     def get_channel_command(self, message):
         msg_parts = message.split()
-        for command in self.commands:
+        for command in CHANNEL_COMMANDS:
             if message.startswith(command):
-                return self.commands[command]
-        for command in self.short_commands:
+                return CHANNEL_COMMANDS[command]
+        for command in CHANNEL_SHORT_COMMANDS:
             if msg_parts[0] == command:
-                return self.short_commands[command]
+                return CHANNEL_SHORT_COMMANDS[command]
         return None
 
     def is_server_command(self, message):
-        for command in self.server_commands:
+        for command in SERVER_COMMANDS:
             if message.startswith(command):
                 return True
-        for command in self.short_server_commands:
+        for command in SERVER_SHORT_COMMANDS:
             if message.startswith(command):
                 return True
         return False
 
     def get_server_command(self, message):
-        for command in self.server_commands:
+        for command in SERVER_COMMANDS:
             if message.startswith(command):
-                return self.server_commands[command]
-        for command in self.short_server_commands:
+                return SERVER_COMMANDS[command]
+        for command in SERVER_SHORT_COMMANDS:
             if message.startswith(command):
-                return self.short_server_commands[command]
+                return SERVER_SHORT_COMMANDS[command]
         return None
 
     def _user_channel_count(self, user):
@@ -477,23 +507,10 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
             self.process_server_command(packet)
             return
         else:
-            if message.startswith("help"):
+            if message.lower().startswith("help"):
                 # They want a list of commands
-                LOG.info(f"Send help message to {fromcall}")
-                for command in self.commands:
-                    cmd = self.commands.get(command)
-                    tx.send(packets.MessagePacket(
-                        from_call=CONF.callsign,
-                        to_call=fromcall,
-                        message_text=f"{cmd['desc']}",
-                    ))
-                for command in self.server_commands:
-                    cmd = self.server_commands.get(command)
-                    tx.send(packets.MessagePacket(
-                        from_call=CONF.callsign,
-                        to_call=fromcall,
-                        message_text=f"{cmd['desc']}",
-                    ))
+                LOG.info("Sending help")
+                IRChannels().help(packet)
                 return
 
             # If not a channel command, then it's a message
@@ -648,7 +665,7 @@ def server(ctx, flush):
         sys.exit(-1)
 
     # Now load the msgTrack from disk if any
-    packets.PacketList().set_maxlen(CONF.packet_list_maxlen)
+    packets.PacketList()
     if flush:
         LOG.debug("Deleting saved objects.")
         packets.PacketTrack().flush()
