@@ -62,6 +62,11 @@ def init_db_schema(engine):
     models.Base.metadata.create_all(engine)
     LOG.info("DB schema initialized")
 
+def get_revision(engine):
+    from alembic.migration import MigrationContext
+    context = MigrationContext.configure(engine.connect())
+    return context.get_current_revision()
+
 
 def wipe_and_init_db_schema(engine):
     from aprsd_irc_extension.db import models

@@ -58,6 +58,34 @@ def db(ctx, flush):
 )
 @click.pass_context
 @cli_helper.process_standard_options
+def db_revision(ctx, flush):
+    """Get the current revision of the DB schema."""
+
+    LOG.info(f"aprsd-irc-extension version: {aprsd_irc_extension.__version__}")
+
+    CONF.log_opt_values(
+        LOG,
+        aprsd_conf_log.LOG_LEVELS[CONF.logging.log_level]
+    )
+
+    engine = db_session.get_engine()
+    revision = db_session.get_revision(engine)
+    LOG.info(f"DB schema revision: {revision}")
+
+
+@cmds.irc.command()
+@cli_helper.add_options(cli_helper.common_options)
+@click.option(
+    "-f",
+    "--flush",
+    "flush",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Flush out all old aged messages on disk.",
+)
+@click.pass_context
+@cli_helper.process_standard_options
 def wipe_db(ctx, flush):
     """Completely wipe existing DB and Initialize and upgrade the DB schema."""
 
