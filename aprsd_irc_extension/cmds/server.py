@@ -648,7 +648,7 @@ def server(ctx, flush):
         sys.exit(-1)
 
     # Now load the msgTrack from disk if any
-    packets.PacketList()
+    packets.PacketList().set_maxlen(CONF.packet_list_maxlen)
     if flush:
         LOG.debug("Deleting saved objects.")
         packets.PacketTrack().flush()
