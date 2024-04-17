@@ -204,7 +204,7 @@ class UserSeen(Base):
     @staticmethod
     def update_seen(callsign: str) -> None:
         session = db_session.get_session()
-        user = UserSeen.find_by_callsign(session, callsign)
+        user = UserSeen.find_by_callsign(callsign)
         if user:
             LOG.warning(f"Updating last seen for {callsign} last {user.last}")
             # user.last = sa.func.now()
