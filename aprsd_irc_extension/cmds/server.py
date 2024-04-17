@@ -131,7 +131,7 @@ class ChannelService:
             for user in user_objs:
                 if user.channel.name == channel:
                     LOG.info(repr(user.channel))
-                    user.delete()
+                    user.remove_from_channel()
                     pkt = packets.MessagePacket(
                         from_call=CONF.callsign,
                         to_call=user,
