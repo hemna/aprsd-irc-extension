@@ -1,3 +1,4 @@
+import datetime
 import logging
 from typing import List
 
@@ -131,6 +132,13 @@ class ChannelUsers(Base):
         except sa.orm.exc.NoResultFound:
             return None
 
+    def remove_from_channel(self) -> None:
+        """Remove move the ChannelUser from it's channel."""
+        session = db_session.get_session()
+        session.delete(self)
+        session.commit()
+
+
     def __repr__(self):
         return f"<ChannelUser(user='{self.user}', channel='{self.channel}')>"
 
@@ -159,3 +167,49 @@ class ChannelMessages(Base):
         pkt = aprsd_packets.factory(aprslib.parse(self.message))
         pkt.timestamp = self.timestamp
         return pkt
+
+
+class UserSeen(Base):
+    __tablename__ = "user_seen"
+    __allow_unmapped__ = True
+
+    id = sa.Column(sa.Integer, sa.Sequence('user_seen_id_seq'), primary_key=True)
+    callsign = sa.Column(sa.Text, nullable=False)
+    last = sa.Column(sa.DateTime, nullable=True)
+
+
+    @staticmethod
+    def find_by_callsign(callsign: str) -> "UserSeen":
+        session = db_session.get_session()
+        try:
+            user = session.query(
+                UserSeen
+            ).filter(
+                UserSeen.callsign == callsign
+            ).one()
+            return user
+        except sa.orm.exc.NoResultFound:
+            return None
+
+    @staticmethod
+    def delete_user(callsign: str) -> None:
+        session = db_session.get_session()
+        user = UserSeen.find_by_callsign(session, callsign)
+        if user:
+            session.delete(user)
+            session.commit()
+        else:
+            LOG.warning(f"User '{callsign}' not found")
+
+    @staticmethod
+    def update_seen(callsign: str) -> None:
+        session = db_session.get_session()
+        user = UserSeen.find_by_callsign(session, callsign)
+        if user:
+            LOG.warning(f"Updating last seen for {callsign} last {user.last}")
+            # user.last = sa.func.now()
+            user.last = datetime.datetime.now()
+        else:
+            user = UserSeen(callsign=callsign, last=sa.func.now())
+        session.add(user)
+        session.commit()

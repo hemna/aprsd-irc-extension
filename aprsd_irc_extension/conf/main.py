@@ -22,6 +22,12 @@ irc_opts = [
         default="sqlite:////tmp/aprsd-irc.db",
         help="The DSN URI for the database",
     ),
+    cfg.IntOpt(
+        "user_last_seen_max_age",
+        # 86400 = 24 hours
+        default=86400,
+        help="The max age of a user last seen record in seconds. User will be removed after this time.",
+    )
 ]
 
 ALL_OPTS = irc_opts

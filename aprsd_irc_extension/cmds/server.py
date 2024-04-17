@@ -15,6 +15,9 @@ from aprsd import threads as aprsd_threads
 from aprsd.threads import tx, registry, keep_alive
 from aprsd.threads import stats as stats_thread
 from aprsd.threads import log_monitor
+from aprsd.packets import core
+from aprsd.packets import collector as packet_collector
+from aprsd.utils import singleton
 
 from aprsd_irc_extension.db import models
 from aprsd_irc_extension.db import session as db_session
@@ -120,27 +123,22 @@ class ChannelService:
         return ch
 
     @staticmethod
-    def leave(channel: str, user: str) -> models.Channel:
+    def leave(channel: str, user: str) -> None:
         """User wants to leave a channel."""
         LOG.info(f"{user} wants to leave channel {channel}")
-        session = db_session.get_session()
-        ch = models.Channel.find_by_name(session, channel)
-        LOG.info(repr(ch))
-        found = False
-        for user_obj in ch.users:
-            if user_obj.user == user:
-                found = True
-                session.delete(user_obj)
-                session.flush()
-                session.commit()
-                pkt = packets.MessagePacket(
-                    from_call=CONF.callsign,
-                    to_call=user,
-                    message_text=f"Left channel {channel}",
-                )
-                tx.send(pkt)
-
-        if not found:
+        user_objs = models.ChannelUsers.find_by_name(user)
+        if user_objs:
+            for user in user_objs:
+                if user.channel.name == channel:
+                    LOG.info(repr(user.channel))
+                    user.delete()
+                    pkt = packets.MessagePacket(
+                        from_call=CONF.callsign,
+                        to_call=user,
+                        message_text=f"Left channel {channel}",
+                    )
+                    tx.send(pkt)
+        else:
             LOG.warning(f"{user} not in channel {channel}")
             pkt = packets.MessagePacket(
                 from_call=CONF.callsign,
@@ -148,9 +146,6 @@ class ChannelService:
                 message_text=f"not in channel {channel}",
             )
             tx.send(pkt)
-
-        session.remove()
-        return channel
 
     @staticmethod
     def add_message(channel: str, pkt: packets.MessagePacket) -> models.Channel:
@@ -604,23 +599,75 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
 
 
 class ChannelInfoThread(aprsd_threads.APRSDThread):
-    _loop_cnt: int = 1
 
     def __init__(self):
         super().__init__("ChannelInfo")
-        self._loop_cnt = 1
 
     def loop(self):
         # Only dump out the stats every 60 seconds
-        if self._loop_cnt % 60 == 0:
+        if self.loop_count % 60 == 0:
             session = db_session.get_session()
             irc_channels = session.query(models.Channel).all()
             for ch in irc_channels:
                 LOG.info(repr(ch))
-        self._loop_cnt += 1
         time.sleep(1)
         return True
 
+
+class ChannelPurgeThread(aprsd_threads.APRSDThread):
+
+    def __init__(self):
+        super().__init__("ChannelPurge")
+
+    def is_inactive(self, user):
+        """Check if a user is inactive."""
+        LOG.debug(f"checking age for {user} {user.last}")
+        now = datetime.datetime.now()
+        max_delta = {"seconds": CONF.aprsd_irc_extension.user_last_seen_max_age}
+        max_timeout = datetime.timedelta(**max_delta)
+        LOG.debug(f"aged delta: {now - user.last} max_timeout: {max_timeout}")
+        if now - user.last > max_timeout:
+            return True
+        else:
+            return False
+
+
+    def loop(self):
+        # Only dump out the stats every 5 minutes seconds
+        if self.loop_count % 3600 == 0:
+            LOG.info("Checking for inactive users")
+            irc_channels = models.Channel.get_all_channels()
+            for ch in irc_channels:
+                for user in ch.users:
+                    # Now see if this user is not active
+                    LOG.debug(f"Checking user {user.user}")
+                    seen_user = models.UserSeen.find_by_callsign(user.user)
+                    if not seen_user:
+                        continue
+                    if self.is_inactive(seen_user):
+                        LOG.info(f"User {user.user} is inactive. Removing from channel {ch.name}")
+                        user.remove_from_channel()
+
+        time.sleep(1)
+        return True
+
+
+@singleton
+class UserSeenMonitor:
+
+    def rx(self, packet: type[core.Packet]) -> None:
+        """We saw a packet from the net."""
+        LOG.warning(f"User {packet.from_call} seen")
+        models.UserSeen.update_seen(packet.from_call)
+
+    def tx(self, packet: type[core.Packet]) -> None:
+        """This monitor doesn't care about TX packets"""
+        pass
+
+
+# Now register our UserSeenMonitor with the packet collector
+# so we can track users seen in the DB!
+packet_collector.PacketCollector().register(UserSeenMonitor)
 
 @cmds.irc.command()
 @cli_helper.add_options(cli_helper.common_options)
@@ -665,7 +712,7 @@ def server(ctx, flush):
         sys.exit(-1)
 
     # Now load the msgTrack from disk if any
-    packets.PacketList()
+    packets.PacketList().flush()
     if flush:
         LOG.debug("Deleting saved objects.")
         packets.PacketTrack().flush()
@@ -694,6 +741,8 @@ def server(ctx, flush):
         packet_queue=aprsd_threads.packet_queue,
     )
     channel_info_thread = ChannelInfoThread()
+    purge_thread = ChannelPurgeThread()
+    purge_thread.start()
 
     if CONF.aprs_registry.enabled:
         LOG.info("Registry Enabled.  Starting Registry thread.")

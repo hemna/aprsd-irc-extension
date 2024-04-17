@@ -1,4 +1,5 @@
 import logging
+import os
 
 import click
 from oslo_config import cfg
@@ -33,7 +34,8 @@ LOG = logging.getLogger("APRSD")
 @cli_helper.process_standard_options
 def db(ctx, flush):
     """Initialize and upgrade the DB schema."""
-
+    p = os.path.dirname(aprsd_irc_extension.__file__)
+    os.chdir(p)
     LOG.info(f"aprsd-irc-extension version: {aprsd_irc_extension.__version__}")
 
     CONF.log_opt_values(
@@ -43,6 +45,33 @@ def db(ctx, flush):
 
     engine = db_session.get_engine()
     db_session.init_db_schema(engine)
+
+@cmds.irc.command()
+@cli_helper.add_options(cli_helper.common_options)
+@click.option(
+    "-f",
+    "--flush",
+    "flush",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Flush out all old aged messages on disk.",
+)
+@click.pass_context
+@cli_helper.process_standard_options
+def db_check(ctx, flush):
+    """Check to see if there is a new revision."""
+    p = os.path.dirname(aprsd_irc_extension.__file__)
+    os.chdir(p)
+    LOG.info(f"aprsd-irc-extension version: {aprsd_irc_extension.__version__}")
+
+    CONF.log_opt_values(
+        LOG,
+        aprsd_conf_log.LOG_LEVELS[CONF.logging.log_level]
+    )
+
+    engine = db_session.get_engine()
+    db_session.revision_check(engine)
 
 
 @cmds.irc.command()
@@ -60,7 +89,8 @@ def db(ctx, flush):
 @cli_helper.process_standard_options
 def db_revision(ctx, flush):
     """Get the current revision of the DB schema."""
-
+    p = os.path.dirname(aprsd_irc_extension.__file__)
+    os.chdir(p)
     LOG.info(f"aprsd-irc-extension version: {aprsd_irc_extension.__version__}")
 
     CONF.log_opt_values(
@@ -86,8 +116,72 @@ def db_revision(ctx, flush):
 )
 @click.pass_context
 @cli_helper.process_standard_options
+def db_upgrade(ctx, flush):
+    """Upgrade the db schema."""
+    p = os.path.dirname(aprsd_irc_extension.__file__)
+    os.chdir(p)
+
+    LOG.info(f"aprsd-irc-extension version: {aprsd_irc_extension.__version__}")
+
+    CONF.log_opt_values(
+        LOG,
+        aprsd_conf_log.LOG_LEVELS[CONF.logging.log_level]
+    )
+
+    engine = db_session.get_engine()
+    revision = db_session.get_revision(engine)
+    LOG.info(f"DB current schema revision: {revision}")
+    db_session.upgrade_db_schema(engine)
+
+
+@cmds.irc.command()
+@cli_helper.add_options(cli_helper.common_options)
+@click.option(
+    "-f",
+    "--flush",
+    "flush",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Flush out all old aged messages on disk.",
+)
+@click.pass_context
+@cli_helper.process_standard_options
+def db_revision_generate(ctx, flush):
+    """Generate a new revision of the DB schema."""
+    p = os.path.dirname(aprsd_irc_extension.__file__)
+    os.chdir(p)
+    LOG.info(f"aprsd-irc-extension version: {aprsd_irc_extension.__version__}")
+
+    CONF.log_opt_values(
+        LOG,
+        aprsd_conf_log.LOG_LEVELS[CONF.logging.log_level]
+    )
+
+    engine = db_session.get_engine()
+    revision = db_session.get_revision(engine)
+    LOG.info(f"DB current schema revision: {revision}")
+    db_session.generate_revision(engine)
+
+
+
+@cmds.irc.command()
+@cli_helper.add_options(cli_helper.common_options)
+@click.option(
+    "-f",
+    "--flush",
+    "flush",
+    is_flag=True,
+    show_default=True,
+    default=False,
+    help="Flush out all old aged messages on disk.",
+)
+@click.pass_context
+@cli_helper.process_standard_options
 def wipe_db(ctx, flush):
     """Completely wipe existing DB and Initialize and upgrade the DB schema."""
+    p = os.path.dirname(aprsd_irc_extension.__file__)
+    os.chdir(p)
 
     LOG.info(f"aprsd-irc-extension version: {aprsd_irc_extension.__version__}")
 

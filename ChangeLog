@@ -1,6 +1,23 @@
 CHANGES
 =======
 
+* Added db-revision command
+* fixed missing )
+* Added /help command
+* Setting packet\_list\_maxlen
+* added /me command
+* Added /ping command
+* Add some basic checks on channel name
+* Fixed bug with process\_channel\_command
+* force channel name to lower case
+* Added some commands to create/delete/list channels
+* Fixed join issue
+* fixed call to factory()
+* updated requirements
+* Add ability to limit the messages pulled from DB
+* Return a channel from get\_channel() not users
+* Enable log\_monitor thread
+
 v0.0.5
 ------
 
