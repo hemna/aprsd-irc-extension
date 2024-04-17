@@ -658,7 +658,10 @@ class UserSeenMonitor:
     def rx(self, packet: type[core.Packet]) -> None:
         """We saw a packet from the net."""
         LOG.warning(f"User {packet.from_call} seen")
-        models.UserSeen.update_seen(packet.from_call)
+        try:
+            models.UserSeen.update_seen(packet.from_call)
+        except Exception as ex:
+            LOG.error(ex)
 
     def tx(self, packet: type[core.Packet]) -> None:
         """This monitor doesn't care about TX packets"""
