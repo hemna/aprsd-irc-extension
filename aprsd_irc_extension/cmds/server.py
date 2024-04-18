@@ -128,10 +128,10 @@ class ChannelService:
         LOG.info(f"{user} wants to leave channel {channel}")
         user_objs = models.ChannelUsers.find_by_name(user)
         if user_objs:
-            for user in user_objs:
-                if user.channel.name == channel:
-                    LOG.info(repr(user.channel))
-                    user.remove_from_channel()
+            for u in user_objs:
+                if u.channel.name == channel:
+                    LOG.info(repr(u.channel))
+                    u.remove_from_channel()
                     pkt = packets.MessagePacket(
                         from_call=CONF.callsign,
                         to_call=user,
