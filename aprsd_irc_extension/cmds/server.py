@@ -60,6 +60,8 @@ CHANNEL_SHORT_COMMANDS = {
            "desc": "/leave #channel or /l #channel - Leave a channel"},
 }
 
+MAX_CHANNEL_NAME_SIZE = 12
+
 def signal_handler(sig, frame):
     click.echo("signal_handler: called")
     aprsd_threads.APRSDThreadList().stop_all()
@@ -211,6 +213,7 @@ class IRChannels:
 
     def ping(self, packet) -> None:
         """Ping the server."""
+        LOG.debug(f"Ping from {packet.from_call}")
         user = packet.from_call
         pkt = packets.MessagePacket(
             from_call=CONF.callsign,
@@ -275,9 +278,9 @@ class IRChannels:
         if not name.startswith("#"):
             raise InvalidChannelName(
                 "Channel name must start with #")
-        if len(name) > 10:
+        if len(name) > MAX_CHANNEL_NAME_SIZE:
             raise InvalidChannelName(
-                "Channel name must be 10 characters or less")
+                f"Channel name must be {MAX_CHANNEL_NAME_SIZE} characters or less")
         if not name[1:].isalnum():
             raise InvalidChannelName(
                 "Channel name must be alphanumeric only")
