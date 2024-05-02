@@ -60,7 +60,7 @@ CHANNEL_SHORT_COMMANDS = {
            "desc": "/leave #channel or /l #channel - Leave a channel"},
 }
 
-MAX_CHANNEL_NAME_SIZE = 12
+MAX_CHANNEL_NAME_SIZE = 13
 
 def signal_handler(sig, frame):
     click.echo("signal_handler: called")
