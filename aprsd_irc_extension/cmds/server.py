@@ -671,6 +671,14 @@ class UserSeenMonitor:
         """This monitor doesn't care about TX packets"""
         pass
 
+    def flush(self) -> None:
+        """Flush out any data."""
+        pass
+
+    def load(self) -> None:
+        """Load any data."""
+        pass
+
 
 # Now register our UserSeenMonitor with the packet collector
 # so we can track users seen in the DB!
