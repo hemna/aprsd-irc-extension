@@ -746,8 +746,8 @@ def server(ctx, flush):
     stats_store_thread = stats_thread.APRSDStatsStoreThread()
     stats_store_thread.start()
 
-    keepalive = keepalive.KeepAliveThread()
-    keepalive.start()
+    keepalive_thread = keepalive.KeepAliveThread()
+    keepalive_thread.start()
 
     rx_thread = aprsd_threads.APRSDDupeRXThread(
         packet_queue=aprsd_threads.packet_queue,
@@ -779,4 +779,4 @@ def server(ctx, flush):
     packets.PacketTrack()
 
     rx_thread.join()
-    keepalive.join()
+    keepalive_thread.join()
