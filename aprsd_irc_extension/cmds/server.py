@@ -15,7 +15,7 @@ from aprsd import threads as aprsd_threads
 from aprsd.client import client_factory
 from aprsd.threads import tx, registry, keepalive
 from aprsd.threads import stats as stats_thread
-from aprsd.threads import log_monitor
+#from aprsd.threads import log_monitor
 from aprsd.packets import core
 from aprsd.packets import collector as packet_collector
 from aprsd.utils import singleton
@@ -769,9 +769,9 @@ def server(ctx, flush):
         bcn_thread = tx.BeaconSendThread()
         bcn_thread.start()
 
-    if CONF.admin.web_enabled:
-        log_monitor_thread = log_monitor.LogMonitorThread()
-        log_monitor_thread.start()
+    # if CONF.admin.web_enabled:
+    #     log_monitor_thread = log_monitor.LogMonitorThread()
+    #     log_monitor_thread.start()
 
     rx_thread.start()
     process_thread.start()
