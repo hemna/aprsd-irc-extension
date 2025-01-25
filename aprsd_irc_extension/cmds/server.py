@@ -13,7 +13,7 @@ import aprsd
 from aprsd import cli_helper, client, packets, stats
 from aprsd import threads as aprsd_threads
 from aprsd.client import client_factory
-from aprsd.threads import tx, registry, keep_alive
+from aprsd.threads import tx, registry, keepalive
 from aprsd.threads import stats as stats_thread
 from aprsd.threads import log_monitor
 from aprsd.packets import core
@@ -746,7 +746,7 @@ def server(ctx, flush):
     stats_store_thread = stats_thread.APRSDStatsStoreThread()
     stats_store_thread.start()
 
-    keepalive = keep_alive.KeepAliveThread()
+    keepalive = keepalive.KeepAliveThread()
     keepalive.start()
 
     rx_thread = aprsd_threads.APRSDDupeRXThread(
