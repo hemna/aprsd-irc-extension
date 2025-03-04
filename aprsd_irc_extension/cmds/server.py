@@ -749,7 +749,7 @@ def server(ctx, flush):
     keepalive_thread = keepalive.KeepAliveThread()
     keepalive_thread.start()
 
-    rx_thread = aprsd_threads.APRSDDupeRXThread(
+    rx_thread = aprsd_threads.APRSDRXThread(
         packet_queue=aprsd_threads.packet_queue,
     )
     process_thread = APRSDIRCProcessPacketThread(
