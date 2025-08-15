@@ -12,7 +12,7 @@ from oslo_config import cfg
 import aprsd
 from aprsd import cli_helper, client, packets, stats
 from aprsd import threads as aprsd_threads
-from aprsd.client import client_factory
+from aprsd.client.client import APRSDClient
 from aprsd.threads import tx, registry, keepalive
 from aprsd.threads import stats as stats_thread
 #from aprsd.threads import log_monitor
@@ -710,19 +710,15 @@ def server(ctx, flush):
     LOG.info(f"APRSD IRC Started version: {aprsd_irc_extension.__version__}")
     LOG.info(f"APRSD version: {aprsd.__version__}")
 
-    # Initialize the client factory and create
-    # The correct client object ready for use
-    aprs_client = client_factory.create()
-
     # Dump all the config options now.
     CONF.log_opt_values(LOG, logging.DEBUG)
 
     # Make sure we have 1 client transport enabled
-    if not client_factory.is_client_enabled():
+    if not APRSDClient().is_enabled:
         LOG.error("No Clients are enabled in config.")
         sys.exit(-1)
 
-    if not client_factory.is_client_configured():
+    if not APRSDClient().is_configured:
         LOG.error("APRS client is not properly configured in config file.")
         sys.exit(-1)
 
