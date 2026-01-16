@@ -1,6 +1,5 @@
 from oslo_config import cfg
 
-
 irc_group = cfg.OptGroup(
     name="aprsd_irc_extension",
     title="APRSD IRC Extension settings",

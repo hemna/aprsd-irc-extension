@@ -31,7 +31,6 @@ import importlib
 import os
 import pkgutil
 
-
 LIST_OPTS_FUNC_NAME = "list_opts"
 
 
@@ -64,9 +63,8 @@ def _import_modules(module_names):
     for modname in module_names:
         mod = importlib.import_module("aprsd_irc_extension.conf." + modname)
         if not hasattr(mod, LIST_OPTS_FUNC_NAME):
-            msg = "The module 'aprsd.conf.%s' should have a '%s' "\
-                  "function which returns the config options." % \
-                  (modname, LIST_OPTS_FUNC_NAME)
+            msg = f"The module 'aprsd.conf.{modname}' should have a '{LIST_OPTS_FUNC_NAME}' " \
+                  "function which returns the config options."
             raise Exception(msg)
         else:
             imported_modules.append(mod)

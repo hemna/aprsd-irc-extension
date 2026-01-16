@@ -1,18 +1,15 @@
 import logging
 import os
-from pathlib import Path
 import sys
-
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
-from alembic import context
-from oslo_config import cfg
+from pathlib import Path
 
 import aprsd
-from aprsd_irc_extension import conf  # noqaa
-from aprsd_irc_extension.db.models import Base
+from alembic import context
 from aprsd.log import log
+from oslo_config import cfg
+from sqlalchemy import engine_from_config, pool
 
+from aprsd_irc_extension.db.models import Base
 
 home = str(Path.home())
 DEFAULT_CONFIG_DIR = f"{home}/.config/aprsd/"

@@ -1,17 +1,15 @@
 import datetime
 import logging
-from typing import List
-
-import sqlalchemy as sa
-from sqlalchemy.orm import registry, relationship
-from sqlalchemy.orm.decl_api import DeclarativeMeta
-from sqlalchemy.sql.schema import ForeignKey, UniqueConstraint
-from sqlalchemy.orm import Mapped
-import sqlalchemy.ext.declarative as dec
 
 import aprslib
-from aprsd_irc_extension.db import session as db_session
+import sqlalchemy as sa
+import sqlalchemy.ext.declarative as dec
 from aprsd.packets import core as aprsd_packets
+from sqlalchemy.orm import Mapped, registry, relationship
+from sqlalchemy.orm.decl_api import DeclarativeMeta
+from sqlalchemy.sql.schema import ForeignKey, UniqueConstraint
+
+from aprsd_irc_extension.db import session as db_session
 
 mapper_registry = registry()
 ModelBase = dec.declarative_base()
@@ -34,12 +32,12 @@ class Channel(Base):
 
     id = sa.Column(sa.Integer, sa.Sequence('channel_id_seq'), primary_key=True)
     name = sa.Column(sa.Text, nullable=False)
-    messages: Mapped[List["ChannelMessages"]] = relationship(
+    messages: Mapped[list["ChannelMessages"]] = relationship(
         order_by="desc(ChannelMessages.timestamp)",
         back_populates="channel",
         lazy="dynamic"
     )  # type: ignore
-    users: Mapped[List["ChannelUsers"]] = relationship(
+    users: Mapped[list["ChannelUsers"]] = relationship(
         order_by="desc(ChannelUsers.user)",
         back_populates="channel",
         cascade="all, delete"
@@ -82,7 +80,7 @@ class Channel(Base):
         return channel
 
     @staticmethod
-    def get_all_channels() -> List["Channel"]:
+    def get_all_channels() -> list["Channel"]:
         session = db_session.get_session()
         channels = session.query(Channel).all()
         return channels

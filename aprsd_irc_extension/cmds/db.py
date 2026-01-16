@@ -2,18 +2,18 @@ import logging
 import os
 
 import click
+from aprsd import cli_helper
+from aprsd.conf import log as aprsd_conf_log
 from oslo_config import cfg
 from rich.console import Console
 
-from aprsd import cli_helper
-from aprsd.conf import log as aprsd_conf_log
-
-from aprsd_irc_extension.db import session as db_session
 import aprsd_irc_extension
-from aprsd_irc_extension import cmds
-from aprsd_irc_extension import conf  # noqa
+from aprsd_irc_extension import (
+    cmds,
+    conf,  # noqa
+)
 from aprsd_irc_extension.db import models
-
+from aprsd_irc_extension.db import session as db_session
 
 CONF = cfg.CONF
 LOG = logging.getLogger("APRSD")

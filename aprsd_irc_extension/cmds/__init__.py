@@ -1,5 +1,4 @@
 import click
-
 from aprsd.cli_helper import AliasedGroup
 from aprsd.main import cli
 

@@ -1,31 +1,32 @@
 import datetime
 import logging
-import threading
 import signal
 import sys
+import threading
 import time
 
-import click
-from oslo_config import cfg
-
-
 import aprsd
-from aprsd import cli_helper, client, packets, stats
+import click
+from aprsd import cli_helper, packets
 from aprsd import threads as aprsd_threads
 from aprsd.client.client import APRSDClient
-from aprsd.threads import tx, registry, keepalive
-from aprsd.threads import stats as stats_thread
+from aprsd.packets import collector as packet_collector
+
 #from aprsd.threads import log_monitor
 from aprsd.packets import core
-from aprsd.packets import collector as packet_collector
+from aprsd.threads import keepalive, registry, tx
+from aprsd.threads import stats as stats_thread
 from aprsd.utils import singleton
+from oslo_config import cfg
 
+import aprsd_irc_extension
+from aprsd_irc_extension import (
+    cmds,
+    conf,  # noqa
+    utils,
+)
 from aprsd_irc_extension.db import models
 from aprsd_irc_extension.db import session as db_session
-import aprsd_irc_extension
-from aprsd_irc_extension import cmds, utils
-from aprsd_irc_extension import conf  # noqa
-
 
 CONF = cfg.CONF
 LOG = logging.getLogger("APRSD")
@@ -68,9 +69,7 @@ def signal_handler(sig, frame):
     aprsd_threads.APRSDThreadList().stop_all()
     if "subprocess" not in str(frame):
         LOG.info(
-            "Ctrl+C, Sending all threads exit! Can take up to 10 seconds {}".format(
-                datetime.datetime.now(),
-            ),
+            f"Ctrl+C, Sending all threads exit! Can take up to 10 seconds {datetime.datetime.now()}",
         )
         time.sleep(1.5)
         packets.PacketTrack().save()
@@ -80,7 +79,7 @@ def signal_handler(sig, frame):
         # sys.exit(0)
 
 
-class InvalidChannelName(Exception):
+class InvalidChannelNameError(Exception):
     pass
 
 
@@ -274,16 +273,16 @@ class IRChannels:
 
     def add_channel(self, name: str):
         if not name:
-            raise InvalidChannelName(
+            raise InvalidChannelNameError(
                 "Channel name must not be empty.")
         if not name.startswith("#"):
-            raise InvalidChannelName(
+            raise InvalidChannelNameError(
                 "Channel name must start with #")
         if len(name) > MAX_CHANNEL_NAME_SIZE:
-            raise InvalidChannelName(
+            raise InvalidChannelNameError(
                 f"Channel name must be {MAX_CHANNEL_NAME_SIZE} characters or less")
         if not name[1:].isalnum():
-            raise InvalidChannelName(
+            raise InvalidChannelNameError(
                 "Channel name must be alphanumeric only")
         name = name.lower()
         if name not in self.data:
@@ -293,21 +292,21 @@ class IRChannels:
 
     def remove_channel(self, name: str) -> None:
         if not name.startswith("#"):
-            raise InvalidChannelName(
+            raise InvalidChannelNameError(
                 "Channel name must start with #")
         if name in self.data:
             del self.data[name]
 
     def get_channel(self, name: str) -> models.Channel:
         if not name.startswith("#"):
-            raise InvalidChannelName(
+            raise InvalidChannelNameError(
                 "Channel name must start with #")
         session = db_session.get_session()
         return models.Channel.find_by_name(session, name)
 
     def channel_exists(self, name: str) -> bool:
         if not name.startswith("#"):
-            raise InvalidChannelName(
+            raise InvalidChannelNameError(
                 "Channel name must start with #")
         return name in self.data
 
@@ -409,7 +408,7 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
             if IRChannels().channel_exists(channel_name):
                 session = db_session.get_session()
                 ch = models.Channel.find_by_name(session, channel_name)
-        except InvalidChannelName as e:
+        except InvalidChannelNameError as e:
             LOG.error(f"Failed to add channel: {e}")
             tx.send(packets.MessagePacket(
                 from_call=CONF.callsign,
@@ -424,7 +423,7 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
         if not ch:
             try:
                 ch = IRChannels().add_channel(channel_name)
-            except InvalidChannelName as e:
+            except InvalidChannelNameError as e:
                 LOG.error(f"Failed to add channel: {e}")
                 tx.send(packets.MessagePacket(
                     from_call=CONF.callsign,
@@ -520,7 +519,7 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
             session = db_session.get_session()
             try:
                 ch = irc_channels.get_channel(channel_name)
-            except InvalidChannelName as e:
+            except InvalidChannelNameError as e:
                 count, found = self._user_channel_count(fromcall)
                 if count == 1:
                     channel_name = found.popitem()[1]

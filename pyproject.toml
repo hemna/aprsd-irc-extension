@@ -20,7 +20,7 @@ description = "An Extension to Ham radio APRSD Daemon to act like an irc server 
 # https://packaging.python.org/guides/distributing-packages-using-setuptools/#python-requires
 requires-python = ">=3.9"
 
-dynamic = ["version", "dependencies", "optional-dependencies"]
+dynamic = ["version"]
 
 # This is an optional longer description of your project that represents
 # the body of text which users will see when they visit PyPI.
@@ -94,9 +94,12 @@ classifiers = [
 #
 # For an analysis of this field vs pip's requirements files see:
 # https://packaging.python.org/discussions/install-requires-vs-requirements/
-[tool.setuptools.dynamic]
-dependencies = {file = ["./requirements.txt"]}
-optional-dependencies.dev = {file = ["./requirements-dev.txt"]}
+dependencies = [
+    "click",
+    "oslo-config",
+    "alembic",
+    "sqlalchemy",
+]
 
 # List additional groups of dependencies here (e.g. development
 # dependencies). Users will be able to install these using the "extras"
@@ -107,7 +110,24 @@ optional-dependencies.dev = {file = ["./requirements-dev.txt"]}
 # Optional dependencies the project provides. These are commonly
 # referred to as "extras". For a more extensive definition see:
 # https://packaging.python.org/en/latest/specifications/dependency-specifiers/#extras
-# [project.optional-dependencies]
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "isort",
+    "mypy",
+    "pep8-naming",
+    "Sphinx",
+    "tox",
+    "pre-commit",
+    "pytest",
+    "pytest-cov",
+    "pip",
+    "pip-tools",
+]
+tests = [
+    "pytest",
+    "pytest-cov",
+]
 
 # List URLs that are relevant to your project
 #
@@ -156,6 +176,37 @@ line_length = 88
 skip_gitignore = true
 # If you need to skip/exclude folders, consider using skip_glob as that will allow the
 # isort defaults for skip to remain without the need to duplicate them.
+
+[tool.ruff]
+line-length = 99
+target-version = "py39"
+exclude = [
+    ".venv",
+    ".git",
+    ".tox",
+    "dist",
+    "doc",
+    ".ropeproject",
+    "build",
+    "*.egg-info",
+]
+
+[tool.ruff.lint]
+# Ignore rules that were ignored in flake8 config
+ignore = [
+    "E501",  # line too long (handled by line-length setting)
+    "E203",  # whitespace before ':' (conflicts with formatter)
+]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+]
 
 [tool.coverage.run]
 branch = true

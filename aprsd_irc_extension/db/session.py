@@ -1,12 +1,13 @@
 import logging
 import os
 from functools import lru_cache
+
+from oslo_config import cfg
 from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-from oslo_config import cfg
-from aprsd_irc_extension import conf  # noqa
 import aprsd_irc_extension
+from aprsd_irc_extension import conf  # noqa
 
 CONF = cfg.CONF
 LOG = logging.getLogger("APRSD")
@@ -70,8 +71,8 @@ def get_revision(engine):
     return context.get_current_revision()
 
 def revision_check(engine):
-    from alembic.config import Config
     from alembic import command
+    from alembic.config import Config
     ini_path = os.path.dirname(aprsd_irc_extension.__file__) + "/alembic.ini"
     LOG.info(f"Using alembic.ini {ini_path}")
     alembic_cfg = Config(ini_path)
@@ -83,8 +84,8 @@ def revision_check(engine):
     LOG.info(f"DB schema check {result}")
 
 def upgrade_db_schema(engine):
-    from alembic.config import Config
     from alembic import command
+    from alembic.config import Config
     ini_path = os.path.dirname(aprsd_irc_extension.__file__) + "/alembic.ini"
     LOG.info(f"Using alembic.ini {ini_path}")
     alembic_cfg = Config(ini_path)
@@ -92,8 +93,8 @@ def upgrade_db_schema(engine):
     LOG.info("DB schema upgraded")
 
 def generate_revision(engine):
-    from alembic.config import Config
     from alembic import command
+    from alembic.config import Config
     ini_path = os.path.dirname(aprsd_irc_extension.__file__) + "/alembic.ini"
     LOG.info(f"Using alembic.ini {ini_path}")
     alembic_cfg = Config(ini_path)
