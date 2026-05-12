@@ -195,7 +195,7 @@ unify==0.5
     # via gray
 untokenize==0.1.1
     # via unify
-urllib3==2.2.3
+urllib3==2.4.0
     # via requests
 virtualenv==20.27.1
     # via
