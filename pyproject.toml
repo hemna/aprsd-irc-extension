@@ -112,6 +112,7 @@ dependencies = [
 # https://packaging.python.org/en/latest/specifications/dependency-specifiers/#extras
 [project.optional-dependencies]
 dev = [
+    "aprsd",
     "ruff",
     "isort",
     "mypy",
@@ -140,9 +141,9 @@ tests = [
 # maintainers, and where to support the project financially. The key is
 # what's used to render the link text on PyPI.
 [project.urls]
-"Homepage" = "https://github.com/hemna/aprsd-irc-extension"
-"Bug Reports" = "https://github.com/hemna/aprsd-irc-extension/issues"
-"Source" = "https://github.com/hemna/aprsd-irc-extension"
+"Homepage" = "http://git.hemna.com/hemna/aprsd-irc-extension"
+"Bug Reports" = "http://git.hemna.com/hemna/aprsd-irc-extension/issues"
+"Source" = "http://git.hemna.com/hemna/aprsd-irc-extension"
 
 # The main entry points for extensions
 [project.entry-points."aprsd.extension"]
@@ -150,6 +151,9 @@ tests = [
 
 [project.entry-points."oslo.config.opts"]
     "aprsd_irc_extension.conf" = "aprsd_irc_extension.conf.opts:list_opts"
+
+[project.scripts]
+    "aprsd-irc-extension-export-config" = "aprsd_irc_extension.cli:main"
 
 # If you are using a different build backend, you will need to change this.
 [tool.setuptools]

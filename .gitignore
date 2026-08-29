@@ -61,3 +61,6 @@ Makefile.venv
 # Copilot
 .DS_Store
 .idea
+uv.lock
+.cursor/
+gray.conf
