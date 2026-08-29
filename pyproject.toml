@@ -141,9 +141,9 @@ tests = [
 # maintainers, and where to support the project financially. The key is
 # what's used to render the link text on PyPI.
 [project.urls]
-"Homepage" = "http://git.hemna.com/hemna/aprsd-irc-extension"
-"Bug Reports" = "http://git.hemna.com/hemna/aprsd-irc-extension/issues"
-"Source" = "http://git.hemna.com/hemna/aprsd-irc-extension"
+"Homepage" = "https://github.com/hemna/aprsd-irc-extension"
+"Bug Reports" = "https://github.com/hemna/aprsd-irc-extension/issues"
+"Source" = "https://github.com/hemna/aprsd-irc-extension"
 
 # The main entry points for extensions
 [project.entry-points."aprsd.extension"]
