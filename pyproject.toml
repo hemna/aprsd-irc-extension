@@ -112,6 +112,7 @@ dependencies = [
 # https://packaging.python.org/en/latest/specifications/dependency-specifiers/#extras
 [project.optional-dependencies]
 dev = [
+    "aprsd",
     "ruff",
     "isort",
     "mypy",
@@ -150,6 +151,9 @@ tests = [
 
 [project.entry-points."oslo.config.opts"]
     "aprsd_irc_extension.conf" = "aprsd_irc_extension.conf.opts:list_opts"
+
+[project.scripts]
+    "aprsd-irc-extension-export-config" = "aprsd_irc_extension.cli:main"
 
 # If you are using a different build backend, you will need to change this.
 [tool.setuptools]
