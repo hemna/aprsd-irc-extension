@@ -1,5 +1,6 @@
 import datetime
 import logging
+import os
 import signal
 import sys
 import threading
@@ -32,6 +33,7 @@ from aprsd_irc_extension.channel import (
 )
 from aprsd_irc_extension.db import models
 from aprsd_irc_extension.db import session as db_session
+from aprsd_irc_extension.statsstore import recover_statsstore
 
 CONF = cfg.CONF
 LOG = logging.getLogger("APRSD")
@@ -744,6 +746,8 @@ def server(ctx, flush):
 
     # Make sure the #lounge channel exists
     IRChannels().add_channel("#lounge")
+
+    recover_statsstore(os.path.join(CONF.save_location, "statsstore.json"))
 
     stats_store_thread = stats_thread.APRSDStatsStoreThread()
     stats_store_thread.start()
