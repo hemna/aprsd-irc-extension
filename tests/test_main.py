@@ -7,7 +7,16 @@ from aprsd_irc_extension.channel import (
     no_channel_membership_message,
     normalize_channel_name,
 )
+from aprsd_irc_extension.db.models import sanitize_message_text
 from aprsd_irc_extension.statsstore import recover_statsstore
+
+
+def test_sanitize_message_text_removes_nul_and_trailing_kiss_delimiters():
+    assert sanitize_message_text("ack6056\u00c0\u00c0\x00raw frame") == "ack6056"
+
+
+def test_sanitize_message_text_preserves_normal_message():
+    assert sanitize_message_text("Hello world") == "Hello world"
 
 
 def test_channel_usage_message_includes_channel_syntax():

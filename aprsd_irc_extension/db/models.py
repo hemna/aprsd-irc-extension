@@ -17,6 +17,11 @@ ModelBase = dec.declarative_base()
 LOG = logging.getLogger("APRSD")
 
 
+def sanitize_message_text(text: str) -> str:
+    """Remove KISS framing and raw frame data from message text."""
+    return text.split("\x00", 1)[0].rstrip("\u00c0").strip()
+
+
 class Base(metaclass=DeclarativeMeta):
     __abstract__ = True
 
@@ -157,7 +162,7 @@ class ChannelMessages(Base):
 
     @staticmethod
     def new_message(packet: aprsd_packets.Packet) -> "ChannelMessages":
-        obj = ChannelMessages(message=packet.raw)
+        obj = ChannelMessages(message=sanitize_message_text(packet.raw))
         return obj
 
     @property
