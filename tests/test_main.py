@@ -7,6 +7,7 @@ from aprsd_irc_extension.channel import (
     no_channel_membership_message,
     normalize_channel_name,
 )
+from aprsd_irc_extension.statsstore import recover_statsstore
 
 
 def test_channel_usage_message_includes_channel_syntax():
@@ -23,6 +24,23 @@ def test_channel_name_without_hash_is_normalized():
 
 def test_channel_name_with_hash_is_preserved():
     assert normalize_channel_name("#lounge") == "#lounge"
+
+
+def test_recover_statsstore_moves_invalid_json(tmp_path):
+    stats_path = tmp_path / "statsstore.json"
+    stats_path.write_text('{"broken"')
+
+    assert recover_statsstore(str(stats_path)) is True
+    assert not stats_path.exists()
+    assert (tmp_path / "statsstore.json.corrupt").read_text() == '{"broken"'
+
+
+def test_recover_statsstore_ignores_valid_json(tmp_path):
+    stats_path = tmp_path / "statsstore.json"
+    stats_path.write_text('{}')
+
+    assert recover_statsstore(str(stats_path)) is False
+    assert stats_path.exists()
 
 
 class TestVersion:
