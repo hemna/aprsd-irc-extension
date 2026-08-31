@@ -25,6 +25,7 @@ from aprsd_irc_extension import (
     conf,  # noqa
     utils,
 )
+from aprsd_irc_extension.channel import channel_usage_message
 from aprsd_irc_extension.db import models
 from aprsd_irc_extension.db import session as db_session
 
@@ -63,6 +64,7 @@ CHANNEL_SHORT_COMMANDS = {
 }
 
 MAX_CHANNEL_NAME_SIZE = 13
+
 
 def signal_handler(sig, frame):
     click.echo("signal_handler: called")
@@ -395,11 +397,11 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                     return
             else:
                 # not sure what they are trying to do here.
-                LOG.error(f"Unknown command with no channel_name '{message}'")
+                LOG.info(f"Channel command without channel_name '{message}'")
                 tx.send(packets.MessagePacket(
                     from_call=CONF.callsign,
                     to_call=fromcall,
-                    message_text="Unknown command",
+                    message_text=channel_usage_message(command_name),
                 ))
                 return
 
