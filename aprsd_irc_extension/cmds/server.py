@@ -25,7 +25,7 @@ from aprsd_irc_extension import (
     conf,  # noqa
     utils,
 )
-from aprsd_irc_extension.channel import channel_usage_message
+from aprsd_irc_extension.channel import channel_usage_message, normalize_channel_name
 from aprsd_irc_extension.db import models
 from aprsd_irc_extension.db import session as db_session
 
@@ -274,6 +274,7 @@ class IRChannels:
             ))
 
     def add_channel(self, name: str):
+        name = normalize_channel_name(name)
         if not name:
             raise InvalidChannelNameError(
                 "Channel name must not be empty.")

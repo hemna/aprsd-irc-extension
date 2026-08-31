@@ -2,11 +2,19 @@
 
 import importlib.metadata
 
-from aprsd_irc_extension.channel import channel_usage_message
+from aprsd_irc_extension.channel import channel_usage_message, normalize_channel_name
 
 
 def test_channel_usage_message_includes_channel_syntax():
     assert channel_usage_message("/join") == "Usage: /join #channel"
+
+
+def test_channel_name_without_hash_is_normalized():
+    assert normalize_channel_name("lounge") == "#lounge"
+
+
+def test_channel_name_with_hash_is_preserved():
+    assert normalize_channel_name("#lounge") == "#lounge"
 
 
 class TestVersion:
