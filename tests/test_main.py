@@ -2,11 +2,19 @@
 
 import importlib.metadata
 
-from aprsd_irc_extension.channel import channel_usage_message, normalize_channel_name
+from aprsd_irc_extension.channel import (
+    channel_usage_message,
+    no_channel_membership_message,
+    normalize_channel_name,
+)
 
 
 def test_channel_usage_message_includes_channel_syntax():
     assert channel_usage_message("/join") == "Usage: /join #channel"
+
+
+def test_user_without_channel_membership_gets_no_channel_message():
+    assert no_channel_membership_message() == "Must join a channel to send a message. try /list"
 
 
 def test_channel_name_without_hash_is_normalized():

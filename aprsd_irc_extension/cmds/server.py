@@ -25,7 +25,11 @@ from aprsd_irc_extension import (
     conf,  # noqa
     utils,
 )
-from aprsd_irc_extension.channel import channel_usage_message, normalize_channel_name
+from aprsd_irc_extension.channel import (
+    channel_usage_message,
+    no_channel_membership_message,
+    normalize_channel_name,
+)
 from aprsd_irc_extension.db import models
 from aprsd_irc_extension.db import session as db_session
 
@@ -538,11 +542,11 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                     session.remove()
                     return
                 elif count == 0:
-                    LOG.error(f"User is not in any channels: {e}")
+                    LOG.info(f"User is not in any channels: {e}")
                     tx.send(packets.MessagePacket(
                         from_call=CONF.callsign,
                         to_call=fromcall,
-                        message_text="Must join a channel to send a message. try /list",
+                        message_text=no_channel_membership_message(),
                     ))
                     session.remove()
                     return
