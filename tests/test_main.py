@@ -2,7 +2,11 @@
 
 import importlib.metadata
 
-import pytest
+from aprsd_irc_extension.channel import channel_usage_message
+
+
+def test_channel_usage_message_includes_channel_syntax():
+    assert channel_usage_message("/join") == "Usage: /join #channel"
 
 
 class TestVersion:
