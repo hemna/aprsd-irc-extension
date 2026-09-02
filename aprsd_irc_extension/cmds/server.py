@@ -544,7 +544,7 @@ class APRSDIRCProcessPacketThread(aprsd_threads.APRSDProcessPacketThread):
                     session.remove()
                     return
                 elif count == 0:
-                    LOG.info(f"User is not in any channels: {e}")
+                    LOG.info(f"User {fromcall} is not in any channels")
                     tx.send(packets.MessagePacket(
                         from_call=CONF.callsign,
                         to_call=fromcall,
